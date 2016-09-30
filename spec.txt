@@ -1,0 +1,24 @@
+
+first screen: play A or 1. or A + 1 or 1+A.
+if A or 1, then they just play in stereo straight through or until stopped. if stopped, the next session asks to continue/resume or start again. if continue, then it starts at the most recent para.
+if A+1, then A plays straight through on left channel and the paras of 1 are randomised and played on right. at the moment it might be useful if the random paras start playing in the silences between the A paras (which means i'll have to make a note of the end times..
+if 1+A, then 1 plays L and A is randomised on R
+
+
+
+ikon (from app store), uses phone number to remember if and where you paused
+if paused, then screen one has 'resume or start again' buttons
+if 'resume', then screen two has green button for start and red for pause (both on the left side of the screen)
+if 'start again', the screen zero/three has 
+'1 or A
+    or
+  A + 1
+     or 
+  1 + A'
+which are individually hot. touching any of the options brings up screen two.
+screen two is the default screen when the thing is playing. if the red pause button is hit, then theres a prompt on the right side of the screen which says 
+'text?'
+if text is hit, then the screen slides left and the most recent para of either 1 or A (easy to nominate if either 1 or A is the only file playing and only slightly more difficult if both are playing. its always the file playing Left which is the considered the main or host text) is shown, and is backwardly scrollable to the start of that text.
+the text screen needs to be Right-swipeable to return to screen two. if either the red or green button is hit again, the text prompt disappears.
+otherwise, the host or main audio file always plays Left, the randomised paras of the secondary file always play Right.
+if only 1 or A are chosen, then they play stereo Left and Right.
