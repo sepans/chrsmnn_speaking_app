@@ -2,9 +2,13 @@ import React, { Component } from 'react'
 import {
   StyleSheet,
   Text,
-  View
+  View,
+  ScrollView,
+  ListView
 } from 'react-native'
 
+import TimerMixin from 'react-timer-mixin';
+const reactMixin = require('react-mixin');
 
 import Button from 'react-native-button'
 import Sound from 'react-native-sound'
@@ -26,19 +30,22 @@ class MainView extends Component {
   constructor(props) {
     super(props)
 
+    this.scrolled = false;
+
     this.state = {
       playing: true,
       screenMode: SCREEN_A_BTNS,
       displayText: false,
-      lastParagraph: 10,
       players: [
         {
+          paragraph: 8,
           playing: false,
           pan: 1,
           time: 0
 
         },
         {
+          paragraph: 8,
           playing: false,
           pan: -1,
           time: 0
@@ -72,6 +79,7 @@ class MainView extends Component {
     });
 
 
+
   }
 
   componentDidMount() {
@@ -91,6 +99,17 @@ class MainView extends Component {
        {...this.state.players[1], time: times[1]},
 
       ]})
+
+    console.log('SETTTING INTERVAL', this.setInterval)
+    this.setInterval(() => {
+      console.log('CHANGING PARAGRAPH')
+      this.setState({...this.state, players: [
+         { ...this.state.players[0], paragraph: this.state.players[0].paragraph++},
+         { ...this.state.players[1]}
+      ]})
+    }, 300)
+
+
   }
 
   
@@ -98,7 +117,7 @@ class MainView extends Component {
 
     console.log('state', this.state)
 
-    const {lastParagraph, players, playing, screenMode} = this.state
+    const { players, playing, screenMode} = this.state
 
 
     this.sounds.forEach((sound, i) => {
@@ -107,10 +126,11 @@ class MainView extends Component {
       sound.setCurrentTime(player.time)
       sound.setPan(player.pan)
       if(playing && player.playing) {
-        sound.play()
+        console.log('playing ',i)
+        //sound.play()
       }
       else {
-        sound.stop()
+        //sound.stop()
       }
     })  
 
@@ -126,30 +146,97 @@ class MainView extends Component {
     })
 
     const btnColor = playing ? '#FF0000' : '#00FF00'
+    const textBtn = screenMode!==SCREEN_TEXT ? <Button onPress={(e) => this.showText()}>Text?</Button> : <View/>
+    console.log('textbtn', screenMode, textBtn)
     const playPauseBtns =  (
       <View>
         <Button key="playpause" style={{backgroundColor: btnColor , width: 10, height: 10, borderRadius: 5 }}  onPress={(e) => this.playPause()}>
           <Text style={{backgroundColor: btnColor, width: 10, height: 10, borderRadius: 5 }} ></Text>
         </Button>
-        <Button onPress={(e) => this.showText()}>Text?</Button>
+       <View>{textBtn}</View>
       </View>
     )
-    const btns = screenMode===SCREEN_PLAY_PAUSE_BTNS ? playPauseBtns : modeBtns
-    console.log(this.speaking ? this.speaking[0].text : '')
-    const content = screenMode!==SCREEN_TEXT ? btns : (<Text>{this.speaking ? this.speaking[0].text : ''}</Text>)
-    
-    
+    const btns = screenMode===SCREEN_A_BTNS ? modeBtns : playPauseBtns
+    console.log(players[0].paragraph)
+    if(this.speaking) {
+
+      //console.log(this.speaking[players[0].paragraph], this.speaking[players[0].paragraph].text)
+
+    }
+    /*
+    const paragraphsUptoNow = this.speaking ? this.speaking.reduce((prev, cur, i) => {
+      console.log(i, players[0].paragraph)
+      const content = 
+      return i <= players[0].paragraph ? <Text key={i}>cur.text</Text> : prev
+    }, '') : ''
+    */
+    const paragraphsUptoNow = this.speaking ? this.speaking.map((cur, i) => {
+      //console.log(i, players[0].paragraph)
+      const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 5}}>{cur.text}</Text> : <Text ref={`para-${i}`}></Text>
+      return <View key={`para-${i}`}>{textEl}</View>
+      
+    }) : ''
+
+
+    //console.log('paragraphsUptoNow', paragraphsUptoNow)
+    const text = <View style={{opacity: screenMode===SCREEN_TEXT ? 1 : 0}}>{this.speaking ? paragraphsUptoNow : null}</View>
+    //console.log(text)
+    /*
+    if(this.speaking) {
+       const lastParagraph = this.refs[`para-${players[0].paragraph}`]
+       console.log(this.refs, `para-${players[0].paragraph}`,  lastParagraph)
+      if(lastParagraph)
+      lastParagraph.measure( (fx, fy, width, height, px, py) => {
+        console.log(py)
+        this.refs.textscroll.scrollTo({y: py, animated:true})
+      })
+    } 
+    */  
 
     return (
       <View style={styles.container}>
-        
-        {content}
-        
-        
-        
-  
+        <View>
+          {btns}
+        </View>
+        <ScrollView ref="textscroll" onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollContentSizeChanged(contentWidth, contentHeight)}}>
+        {text}
+        </ScrollView>
       </View>
     )
+  }
+
+  scrollContentSizeChanged(contentWidth, contentHeight) {
+      if(this.refs.textscroll)
+      {
+       this.refs.textscroll.scrollTo({y: contentHeight, animated:true});
+      }
+
+  }
+
+  componentDidUpdate(prevPrps, prevState) {
+    /*
+    console.log('COMPONENT DID UPDATE')
+    const { players } = this.state
+    const  prevPlayers  = prevState.players
+
+    if(this.scrolled && players[0].paragraph === prevPlayers[0].paragraph && players[1].paragraph === prevPlayers[1].paragraph) {
+      return;
+    }
+    console.log('SCROLLING')
+
+    this.scrolled = true;
+
+    if(this.speaking) {
+       const lastParagraph = this.refs[`para-${players[0].paragraph}`]
+       console.log(this.refs, `para-${players[0].paragraph}`,  lastParagraph)
+      if(lastParagraph)
+      lastParagraph.measure( (fx, fy, width, height, px, py) => {
+        console.log(py)
+        this.refs.textscroll.scrollTo({y: py, animated:true})
+      })
+    }
+    */
+
   }
 
   showText() {
@@ -168,7 +255,7 @@ class MainView extends Component {
 
   playSound(mode) {
 
-    const {lastParagraph, players} = this.state
+    const {players} = this.state
     let rand
 
     switch(mode) {
@@ -180,13 +267,14 @@ class MainView extends Component {
             {
               playing: true,
               pan: 0,
-              time: this.speaking[lastParagraph].time
-
+              time: this.speaking[this.state.players[0].paragraph].time,
+              paragraph: this.state.players[0].paragraph
             },
             {
               playing: false,
               pan: 0,
-              time: 0
+              time: 0,
+              paragraph: this.state.players[1].paragraph
 
             }
           ]
@@ -201,13 +289,15 @@ class MainView extends Component {
             {
               playing: true,
               pan: -1,
-              time: this.speaking[lastParagraph].time
+              time: this.speaking[this.state.players[0].paragraph].time,
+              paragraph: this.state.players[0].paragraph
 
             },
             {
               playing: true,
               pan: 1,
-              time: this.speaking[rand].time
+              time: this.speaking[rand].time,
+              paragraph: rand
 
             }
           ]
@@ -222,13 +312,15 @@ class MainView extends Component {
             {
               playing: true,
               pan: -1,
-              time: this.speaking[lastParagraph].time
+              time: this.speaking[this.state.players[0].paragraph].time,
+              paragraph: this.state.players[0].paragraph
 
             },
             {
               playing: true,
               pan: 1,
-              time: this.speaking[rand].time
+              time: this.speaking[rand].time,
+              paragraph: rand
 
             }
           ]
@@ -265,5 +357,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
   },
 })
+
+reactMixin(MainView.prototype, TimerMixin);
 
 export default MainView
