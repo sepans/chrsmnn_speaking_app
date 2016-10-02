@@ -100,14 +100,21 @@ class MainView extends Component {
 
       ]})
 
-    console.log('SETTTING INTERVAL', this.setInterval)
-    this.setInterval(() => {
+    console.log('SETTTING INTERVAL', TimerMixin.setTimeout)
+
+   // this.timer = TimerMixin.setTimeout(() => {
+   //    console.log('TIMER!!!! I do not leak!');
+   //  }, 5000);
+    /*
+    this.timer = TimerMixin.setInterval(() => {
       console.log('CHANGING PARAGRAPH')
       this.setState({...this.state, players: [
-         { ...this.state.players[0], paragraph: this.state.players[0].paragraph++},
+         { ...this.state.players[0], paragraph: this.state.players[0].paragraph+1},
          { ...this.state.players[1]}
       ]})
-    }, 300)
+    }, 5000)
+    */
+    
 
 
   }
@@ -332,6 +339,10 @@ class MainView extends Component {
   }
 
   componentWillUnmount() {
+
+  //TimerMixin.clearTimeout(this.timer);
+  TimerMixin.clearInterval(this.timer);
+
     console.log('unmounting')
     this.sounds[0].stop()
     this.sounds[1].stop()
@@ -358,6 +369,6 @@ const styles = StyleSheet.create({
   },
 })
 
-reactMixin(MainView.prototype, TimerMixin);
+//reactMixin(MainView.prototype, TimerMixin);
 
 export default MainView
