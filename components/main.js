@@ -38,14 +38,14 @@ class MainView extends Component {
       displayText: false,
       players: [
         {
-          paragraph: 8,
+          paragraph: 3,
           playing: false,
           pan: 1,
           time: 0
 
         },
         {
-          paragraph: 8,
+          paragraph: 0,
           playing: false,
           pan: -1,
           time: 0
@@ -100,20 +100,48 @@ class MainView extends Component {
 
       ]})
 
-    console.log('SETTTING INTERVAL', TimerMixin.setTimeout)
+    //console.log('SETTTING INTERVAL', TimerMixin.setTimeout)
 
    // this.timer = TimerMixin.setTimeout(() => {
    //    console.log('TIMER!!!! I do not leak!');
    //  }, 5000);
-    /*
+    
     this.timer = TimerMixin.setInterval(() => {
-      console.log('CHANGING PARAGRAPH')
+      let newParagraphs = [-1, -1]
+      if(this.speaking) {
+       // this.sounds.forEach((sound, i) => {
+         const i = 0
+         const sound = this.sounds[i]
+          //console.log(i, this.state.players[i].paragraph)
+          sound.getCurrentTime((seconds) => {
+            //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
+            if(seconds > this.speaking[this.state.players[i].paragraph + 1].time) {  //TODO when ends
+              if(i===0) {
+                this.setState({...this.state, players: [
+                   { ...this.state.players[0], paragraph: this.state.players[0].paragraph+1},
+                   { ...this.state.players[1]}
+                ]})
+
+              }
+              /*
+              this.setState({...this.state, players: [
+                 { ...this.state.players[i], paragraph: this.state.players[i].paragraph+1}
+              ]})
+              */
+
+            }
+
+          })
+        //})
+      }
+      /*
       this.setState({...this.state, players: [
          { ...this.state.players[0], paragraph: this.state.players[0].paragraph+1},
          { ...this.state.players[1]}
       ]})
-    }, 5000)
-    */
+      */
+    }, 3000)
+    
     
 
 
@@ -134,10 +162,10 @@ class MainView extends Component {
       sound.setPan(player.pan)
       if(playing && player.playing) {
         console.log('playing ',i)
-        //sound.play()
+        sound.play()
       }
       else {
-        //sound.stop()
+        sound.stop()
       }
     })  
 
