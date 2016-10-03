@@ -4,7 +4,8 @@ import {
   Text,
   View,
   ScrollView,
-  ListView
+  ListView,
+  AsyncStorage
 } from 'react-native'
 
 import TimerMixin from 'react-timer-mixin';
@@ -24,37 +25,43 @@ const SCREEN_A_BTNS = 'screen A btns'
 const SCREEN_PLAY_PAUSE_BTNS = 'screen play pause btns'
 const SCREEN_TEXT = 'screen text'
 
+const STORAGE_KEY = 'chrsmnn_last_speaking_para';
+
+  const initialState ={
+    playing: true,
+    screenMode: SCREEN_A_BTNS,
+    displayText: false,
+    players: [
+      {
+        paragraph: 0,
+        playing: false,
+        pan: 1,
+        time: 0
+
+      },
+      {
+        paragraph: 0,
+        playing: false,
+        pan: -1,
+        time: 0
+
+      }
+
+    ]
+  }
+
 
 class MainView extends Component {
+
+
+
 
   constructor(props) {
     super(props)
 
-    this.scrolled = false;
+    //this.scrolled = false;
 
-    this.state = {
-      playing: true,
-      screenMode: SCREEN_A_BTNS,
-      displayText: false,
-      players: [
-        {
-          paragraph: 3,
-          playing: false,
-          pan: 1,
-          time: 0
-
-        },
-        {
-          paragraph: 0,
-          playing: false,
-          pan: -1,
-          time: 0
-
-        }
-
-      ]
-    }
-
+    this.state = initialState;
     const file = 'speaking.mp3'
     console.log('file', file)
 
@@ -82,7 +89,36 @@ class MainView extends Component {
 
   }
 
+  async _loadInitialState() {
+    try {
+      const value = await AsyncStorage.getItem(STORAGE_KEY);
+      if (value !== null) {
+        const storedParNum = parseInt(value)
+        console.log('Recovered selection from disk: ', storedParNum);
+        this.setState({...this.state, players: [
+           { ...this.state.players[0], paragraph: storedParNum},
+           { ...this.state.players[1]}
+        ]})
+
+      }
+    } catch (error) {
+      console.log('AsyncStorage error: ', error.message);
+    }
+  }
+/*
+  _setPlayerTimes() {
+    const times = [this.speaking[1].time, this.speaking[2].time]
+    console.log('TIMES ', times)
+    this.setState({...this.state, players: [
+       { ...this.state.players[0], time: times[0]},
+       {...this.state.players[1], time: times[1]},
+
+      ]})    
+  }
+  */
+
   componentDidMount() {
+    this._loadInitialState().done()
     console.log('SpeakingData', SpeakingData)
     this.speaking = SpeakingData.paragraphs.map(d => {
       const parts = d.time_min.split(':')
@@ -93,12 +129,8 @@ class MainView extends Component {
 
       }
     })
-    const times = [this.speaking[1].time, this.speaking[2].time]
-    this.setState({...this.state, players: [
-       { ...this.state.players[0], time: times[0]},
-       {...this.state.players[1], time: times[1]},
-
-      ]})
+    
+    //this._setPlayerTimes()
 
     //console.log('SETTTING INTERVAL', TimerMixin.setTimeout)
 
@@ -117,10 +149,15 @@ class MainView extends Component {
             //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
             if(seconds > this.speaking[this.state.players[i].paragraph + 1].time) {  //TODO when ends
               if(i===0) {
+                const newParaNum = this.state.players[0].paragraph+1
+                console.log('prev and new par', this.state.players[0].paragraph, newParagraphs)
                 this.setState({...this.state, players: [
-                   { ...this.state.players[0], paragraph: this.state.players[0].paragraph+1},
+                   { ...this.state.players[0], paragraph: newParaNum},
                    { ...this.state.players[1]}
                 ]})
+
+                AsyncStorage.setItem(STORAGE_KEY, newParaNum.toString())
+
 
               }
               /*
@@ -140,7 +177,7 @@ class MainView extends Component {
          { ...this.state.players[1]}
       ]})
       */
-    }, 3000)
+    }, 500)
     
     
 
@@ -152,16 +189,22 @@ class MainView extends Component {
 
     console.log('state', this.state)
 
+    if(!this.state) {
+      return <View/>
+    }
+
     const { players, playing, screenMode} = this.state
 
 
     this.sounds.forEach((sound, i) => {
       const player = players[i]
-      console.log(i, player)
-      sound.setCurrentTime(player.time)
+      console.log('parag time', player.paragraph, player.time)
+      if(this.speaking && player.time===0) {
+        player.time = this.speaking[player.paragraph].time
+        sound.setCurrentTime(player.time)
+      }
       sound.setPan(player.pan)
       if(playing && player.playing) {
-        console.log('playing ',i)
         sound.play()
       }
       else {
@@ -182,7 +225,6 @@ class MainView extends Component {
 
     const btnColor = playing ? '#FF0000' : '#00FF00'
     const textBtn = screenMode!==SCREEN_TEXT ? <Button onPress={(e) => this.showText()}>Text?</Button> : <View/>
-    console.log('textbtn', screenMode, textBtn)
     const playPauseBtns =  (
       <View>
         <Button key="playpause" style={{backgroundColor: btnColor , width: 10, height: 10, borderRadius: 5 }}  onPress={(e) => this.playPause()}>
@@ -192,7 +234,7 @@ class MainView extends Component {
       </View>
     )
     const btns = screenMode===SCREEN_A_BTNS ? modeBtns : playPauseBtns
-    console.log(players[0].paragraph)
+    console.log('players[0].paragraph', players[0].paragraph)
     if(this.speaking) {
 
       //console.log(this.speaking[players[0].paragraph], this.speaking[players[0].paragraph].text)
@@ -207,7 +249,7 @@ class MainView extends Component {
     */
     const paragraphsUptoNow = this.speaking ? this.speaking.map((cur, i) => {
       //console.log(i, players[0].paragraph)
-      const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 5}}>{cur.text}</Text> : <Text ref={`para-${i}`}></Text>
+      const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 10}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
       return <View key={`para-${i}`}>{textEl}</View>
       
     }) : ''
@@ -241,9 +283,11 @@ class MainView extends Component {
   }
 
   scrollContentSizeChanged(contentWidth, contentHeight) {
+      const scorllHeight = 0
+      console.log(contentHeight)
       if(this.refs.textscroll)
       {
-       this.refs.textscroll.scrollTo({y: contentHeight, animated:true});
+        this.refs.textscroll.scrollTo({y: contentHeight - scorllHeight , animated:true});
       }
 
   }
@@ -368,8 +412,8 @@ class MainView extends Component {
 
   componentWillUnmount() {
 
-  //TimerMixin.clearTimeout(this.timer);
-  TimerMixin.clearInterval(this.timer);
+    //TimerMixin.clearTimeout(this.timer);
+    TimerMixin.clearInterval(this.timer);
 
     console.log('unmounting')
     this.sounds[0].stop()
