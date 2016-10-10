@@ -28,6 +28,8 @@ const SCREEN_TEXT = 'screen text'
 const STORAGE_KEY = 'chrsmnn_last_speaking_para';
 
   const initialState ={
+    speakingLoaded: false,
+    storageLoaded: false,
     playing: true,
     screenMode: SCREEN_A_BTNS,
     displayText: false,
@@ -90,16 +92,22 @@ class MainView extends Component {
   }
 
   async _loadInitialState() {
+    console.log('INITIAL STATE')
     try {
       const value = await AsyncStorage.getItem(STORAGE_KEY);
       if (value !== null) {
         const storedParNum = parseInt(value)
         console.log('Recovered selection from disk: ', storedParNum);
-        this.setState({...this.state, players: [
+        this.setState({...this.state,
+          storageLoaded: true,
+          players: [
            { ...this.state.players[0], paragraph: storedParNum},
            { ...this.state.players[1]}
         ]})
 
+      }
+      else {
+        this.setState({...this.state, storageLoaded: true});
       }
     } catch (error) {
       console.log('AsyncStorage error: ', error.message);
@@ -117,9 +125,19 @@ class MainView extends Component {
   }
   */
 
+  shouldComponentUpdate(nextProps, nextState) {
+    console.log('should update? ', nextState)
+    if(!nextState.storageLoaded || !nextState.speakingLoaded) {
+      console.log('NO')
+      return false
+    }
+
+    return true;
+
+  }
+
   componentDidMount() {
     this._loadInitialState().done()
-    console.log('SpeakingData', SpeakingData)
     this.speaking = SpeakingData.paragraphs.map(d => {
       const parts = d.time_min.split(':')
       const seconds = (+parts[0])*60 + (+parts[1])
@@ -129,6 +147,7 @@ class MainView extends Component {
 
       }
     })
+    this.setState({...this.state, speakingLoaded: true});
     
     //this._setPlayerTimes()
 
@@ -189,7 +208,7 @@ class MainView extends Component {
 
     console.log('state', this.state)
 
-    if(!this.state) {
+    if(!this.state.storageLoaded || !this.state.speakingLoaded) {
       return <View/>
     }
 
