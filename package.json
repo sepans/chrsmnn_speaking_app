@@ -10,6 +10,7 @@
     "react-mixin": "^2.0.2",
     "react-native": "0.34.0",
     "react-native-button": "^1.7.1",
+    "react-native-drawer": "^2.3.0",
     "react-native-sound": "^0.8.3",
     "react-timer-mixin": "^0.13.3"
   }

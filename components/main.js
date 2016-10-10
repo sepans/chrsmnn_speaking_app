@@ -13,6 +13,7 @@ const reactMixin = require('react-mixin');
 
 import Button from 'react-native-button'
 import Sound from 'react-native-sound'
+import Drawer from 'react-native-drawer'
 
 import SpeakingData from './../speaking.json'
 //var SpeakingData = require('./../speaking.json')
@@ -21,9 +22,9 @@ const ONE_OR_A = '1 or A', A_PLUS_ONE = 'A + 1', ONE_PLUS_A = '1 + A'
 
 const PLAY_MODES = [ ONE_OR_A, A_PLUS_ONE, ONE_PLUS_A]
 
+const SCREEN_CONTINUE = 'screen continue'
 const SCREEN_A_BTNS = 'screen A btns'
 const SCREEN_PLAY_PAUSE_BTNS = 'screen play pause btns'
-const SCREEN_TEXT = 'screen text'
 
 const STORAGE_KEY = 'chrsmnn_last_speaking_para';
 
@@ -33,6 +34,8 @@ const STORAGE_KEY = 'chrsmnn_last_speaking_para';
     playing: true,
     screenMode: SCREEN_A_BTNS,
     displayText: false,
+    textPaneOpen: false,
+    playMode: ONE_OR_A,
     players: [
       {
         paragraph: 0,
@@ -100,6 +103,7 @@ class MainView extends Component {
         console.log('Recovered selection from disk: ', storedParNum);
         this.setState({...this.state,
           storageLoaded: true,
+          screenMode: SCREEN_CONTINUE,
           players: [
            { ...this.state.players[0], paragraph: storedParNum},
            { ...this.state.players[1]}
@@ -203,7 +207,7 @@ class MainView extends Component {
 
   }
 
-  
+
   render() {
 
     console.log('state', this.state)
@@ -224,10 +228,10 @@ class MainView extends Component {
       }
       sound.setPan(player.pan)
       if(playing && player.playing) {
-        sound.play()
+        //sound.play()
       }
       else {
-        sound.stop()
+        //sound.stop()
       }
     })  
 
@@ -243,16 +247,48 @@ class MainView extends Component {
     })
 
     const btnColor = playing ? '#FF0000' : '#00FF00'
-    const textBtn = screenMode!==SCREEN_TEXT ? <Button onPress={(e) => this.showText()}>Text?</Button> : <View/>
+    const textBtn = <Button style={{color: '#333', marginTop: 10}} onPress={(e) => this.showText()}>Text</Button>
     const playPauseBtns =  (
       <View>
-        <Button key="playpause" style={{backgroundColor: btnColor , width: 10, height: 10, borderRadius: 5 }}  onPress={(e) => this.playPause()}>
-          <Text style={{backgroundColor: btnColor, width: 10, height: 10, borderRadius: 5 }} ></Text>
+        <Button key="playpause" 
+                style={{marginLeft: 30}}  
+                onPress={(e) => this.playPause()}>
+          <Text style={{backgroundColor: btnColor, width: 14, height: 14, borderRadius: 7 }} ></Text>
         </Button>
        <View>{textBtn}</View>
       </View>
     )
-    const btns = screenMode===SCREEN_A_BTNS ? modeBtns : playPauseBtns
+    const continueBtns = (
+      <View>
+        <Button key="continue" 
+                style={{marginLeft: 30}}  
+                onPress={(e) => this.continuePlaying()}>
+          <Text>resume</Text>
+        </Button>
+        <Button key="startover" 
+                style={{marginLeft: 30}}  
+                onPress={(e) => this.startOverPlaying()}>
+          <Text>start again</Text>
+        </Button>
+      </View>
+
+    )
+    let btns;
+    switch(screenMode) {
+      case SCREEN_A_BTNS:
+        btns = modeBtns;
+        break;
+      case SCREEN_PLAY_PAUSE_BTNS:
+        btns = playPauseBtns;
+        break;
+      case SCREEN_CONTINUE: 
+        btns = continueBtns;
+        break;
+      default:
+        btns = <View/>
+        break;
+     //= screenMode===SCREEN_A_BTNS ? modeBtns : playPauseBtns
+    }
     console.log('players[0].paragraph', players[0].paragraph)
     if(this.speaking) {
 
@@ -275,7 +311,11 @@ class MainView extends Component {
 
 
     //console.log('paragraphsUptoNow', paragraphsUptoNow)
-    const text = <View style={{opacity: screenMode===SCREEN_TEXT ? 1 : 0}}>{this.speaking ? paragraphsUptoNow : null}</View>
+    const text = (
+      <ScrollView ref="textscroll" onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollContentSizeChanged(contentWidth, contentHeight)}}>
+        <View>{this.speaking ? paragraphsUptoNow : null}</View>
+      </ScrollView>
+    )
     //console.log(text)
     /*
     if(this.speaking) {
@@ -289,6 +329,7 @@ class MainView extends Component {
     } 
     */  
 
+/*
     return (
       <View style={styles.container}>
         <View>
@@ -300,6 +341,31 @@ class MainView extends Component {
       </View>
     )
   }
+  */
+    return (
+      <Drawer 
+        type="displace"
+        content={text} 
+        ref="textdrawer" 
+        styles={{drawer: {backgroundColor: '#EEE', padding: 0}}} 
+        tapToClose={true}
+        captureGestures={true}
+        acceptPan={true}
+        negotiatePan={true}
+        acceptDoubleTap={true}
+        panCloseMask={0.3}
+        side='right'
+        
+        >
+          <View style={styles.container}>
+          <View>
+            {btns}
+          </View>
+        </View>
+      </Drawer>
+    )
+  }
+
 
   scrollContentSizeChanged(contentWidth, contentHeight) {
       const scorllHeight = 0
@@ -338,7 +404,7 @@ class MainView extends Component {
   }
 
   showText() {
-    this.setState({...this.state, screenMode: SCREEN_TEXT})
+    this.refs.textdrawer.open()
   }
 
   _handlePress(mode) {
@@ -351,6 +417,29 @@ class MainView extends Component {
     this.setState({...this.state, playing: !this.state.playing})
   }
 
+
+
+  continuePlaying() {
+   this.setState({...this.state,
+      screenMode: SCREEN_PLAY_PAUSE_BTNS,
+      players: [
+       { ...this.state.players[0], playing: true},
+       { ...this.state.players[1]}
+    ]})    
+  }
+  
+  startOverPlaying() {
+    //this.setState({...this.state, screenMode: SCREEN_A_BTNS, players})
+
+    this.setState({...this.state,
+      screenMode: SCREEN_A_BTNS,
+      players: [
+       { ...this.state.players[0], paragraph: 0, time: 0},
+       { ...this.state.players[1]}
+    ]})
+
+  }
+
   playSound(mode) {
 
     const {players} = this.state
@@ -361,6 +450,7 @@ class MainView extends Component {
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
+          playMode: mode,
           players: [
             {
               playing: true,
@@ -383,6 +473,7 @@ class MainView extends Component {
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
+          playMode: mode,
           players: [
             {
               playing: true,
@@ -406,6 +497,7 @@ class MainView extends Component {
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
+          playMode: mode,
           players: [
             {
               playing: true,
@@ -447,16 +539,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: '#F5FCFF',
-  },
-  welcome: {
-    fontSize: 20,
-    textAlign: 'center',
-    margin: 10,
-  },
-  instructions: {
-    textAlign: 'center',
-    color: '#333333',
-    marginBottom: 5,
   },
 })
 
