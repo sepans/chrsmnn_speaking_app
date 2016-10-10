@@ -112,6 +112,7 @@ class MainView extends Component {
       }
       else {
         this.setState({...this.state, storageLoaded: true});
+        AsyncStorage.setItem(STORAGE_KEY, '0')
       }
     } catch (error) {
       console.log('AsyncStorage error: ', error.message);
@@ -261,14 +262,14 @@ class MainView extends Component {
     const continueBtns = (
       <View>
         <Button key="continue" 
-                style={{marginLeft: 30}}  
+                style={{color: '#333'}}  
                 onPress={(e) => this.continuePlaying()}>
-          <Text>resume</Text>
+          resume
         </Button>
         <Button key="startover" 
-                style={{marginLeft: 30}}  
+                style={{marginTop: 10, color: '#333'}}  
                 onPress={(e) => this.startOverPlaying()}>
-          <Text>start again</Text>
+          start again
         </Button>
       </View>
 
@@ -347,7 +348,7 @@ class MainView extends Component {
         type="displace"
         content={text} 
         ref="textdrawer" 
-        styles={{drawer: {backgroundColor: '#EEE', padding: 0}}} 
+        styles={{drawer: { padding: 0}}} 
         tapToClose={true}
         captureGestures={true}
         acceptPan={true}
@@ -362,10 +363,15 @@ class MainView extends Component {
             {btns}
           </View>
         </View>
+        <Button  onPress={(e) => this.clearStorage()}>Delete storage</Button>
       </Drawer>
     )
   }
 
+
+  clearStorage() {
+    AsyncStorage.clear()
+  }
 
   scrollContentSizeChanged(contentWidth, contentHeight) {
       const scorllHeight = 0
@@ -404,6 +410,7 @@ class MainView extends Component {
   }
 
   showText() {
+    console.log('SHOW TEXT')
     this.refs.textdrawer.open()
   }
 
