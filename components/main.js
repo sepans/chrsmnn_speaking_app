@@ -559,6 +559,10 @@ class MainView extends Component {
     console.log('unmounting')
     this.sounds[0].stop()
     this.sounds[1].stop()
+
+    this.sounds[0].release()
+    this.sounds[1].release()
+
   }
 
 }
