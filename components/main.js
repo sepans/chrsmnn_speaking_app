@@ -171,17 +171,26 @@ class MainView extends Component {
           //console.log(i, this.state.players[i].paragraph)
           sound.getCurrentTime((seconds) => {
             //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
-            if(seconds > this.speaking[this.state.players[i].paragraph + 1].time) {  //TODO when ends
+            const newParaNum = this.state.players[i].paragraph+1
+            const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
+            if(seconds > nextParStartTime) {  //TODO when ends
               if(i===0) {
-                const newParaNum = this.state.players[0].paragraph+1
-                console.log('prev and new par', this.state.players[0].paragraph, newParagraphs)
+                //console.log('prev and new par', i, this.state.players[i].paragraph, newParagraphs)
                 this.setState({...this.state, players: [
-                   { ...this.state.players[0], paragraph: newParaNum},
+                   { ...this.state.players[0], paragraph: newParaNum, time: seconds}, //
                    { ...this.state.players[1]}
                 ]})
 
                 AsyncStorage.setItem(STORAGE_KEY, newParaNum.toString())
 
+
+              }
+              else {
+                //console.log('prev and new par', i, this.state.players[i].paragraph, newParagraphs)
+                this.setState({...this.state, players: [
+                   { ...this.state.players[0]}, //
+                   { ...this.state.players[1], time: seconds}
+                ]})
 
               }
               /*
@@ -222,17 +231,29 @@ class MainView extends Component {
 
     this.sounds.forEach((sound, i) => {
       const player = players[i]
-      console.log('parag time', player.paragraph, player.time)
-      if(this.speaking && player.time===0) {
-        player.time = this.speaking[player.paragraph].time
-        sound.setCurrentTime(player.time)
-      }
+      //console.log('parag time', i, player.paragraph, player.time)
+      sound.getCurrentTime((seconds) => {
+            //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
+            //const newParaNum = this.state.players[i].paragraph+1
+            //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
+            //if(seconds > nextParStartTime) {  //TODO when ends
+        const paraTime = this.speaking[player.paragraph].time
+        //console.log('player time: ', i, seconds, paraTime)
+        if(seconds < paraTime) {
+          player.time = paraTime
+        }
+        if(this.speaking && seconds<1) {  //TODO: this.speaking needed?
+          //player.time = this.speaking[player.paragraph].time
+          //console.log('SETTING TIME TO ',i , player.time)
+          sound.setCurrentTime(player.time)
+        }
+      })
       sound.setPan(player.pan)
       if(playing && player.playing) {
-        //sound.play()
+        sound.play()
       }
       else {
-        //sound.stop()
+        sound.pause()
       }
     })  
 
@@ -356,7 +377,9 @@ class MainView extends Component {
         acceptDoubleTap={true}
         panCloseMask={0.3}
         side='right'
-        
+        tweenHandler={(ratio) => ({
+          main: { opacity:(2-ratio)/2 }
+        })}        
         >
           <View style={styles.container}>
           <View>
