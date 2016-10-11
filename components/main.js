@@ -99,11 +99,13 @@ class MainView extends Component {
     try {
       const value = await AsyncStorage.getItem(STORAGE_KEY);
       if (value !== null) {
-        const storedParNum = parseInt(value)
+        const storedParNum = JSON.parse(value).player1Paragraph
+        const playMode = JSON.parse(value).playMode
         console.log('Recovered selection from disk: ', storedParNum);
         this.setState({...this.state,
           storageLoaded: true,
           screenMode: SCREEN_CONTINUE,
+          playMode: playMode,
           players: [
            { ...this.state.players[0], paragraph: storedParNum},
            { ...this.state.players[1]}
@@ -112,7 +114,7 @@ class MainView extends Component {
       }
       else {
         this.setState({...this.state, storageLoaded: true});
-        AsyncStorage.setItem(STORAGE_KEY, '0')
+        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  0}))
       }
     } catch (error) {
       console.log('AsyncStorage error: ', error.message);
@@ -181,7 +183,7 @@ class MainView extends Component {
                    { ...this.state.players[1]}
                 ]})
 
-                AsyncStorage.setItem(STORAGE_KEY, newParaNum.toString())
+                AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  newParaNum}))
 
 
               }
@@ -237,6 +239,7 @@ class MainView extends Component {
             //const newParaNum = this.state.players[i].paragraph+1
             //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
             //if(seconds > nextParStartTime) {  //TODO when ends
+        console.log(i, player.paragraph, this.speaking)
         const paraTime = this.speaking[player.paragraph].time
         //console.log('player time: ', i, seconds, paraTime)
         if(seconds < paraTime) {
@@ -351,19 +354,7 @@ class MainView extends Component {
     } 
     */  
 
-/*
-    return (
-      <View style={styles.container}>
-        <View>
-          {btns}
-        </View>
-        <ScrollView ref="textscroll" onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollContentSizeChanged(contentWidth, contentHeight)}}>
-        {text}
-        </ScrollView>
-      </View>
-    )
-  }
-  */
+
     return (
       <Drawer 
         type="displace"
@@ -450,12 +441,15 @@ class MainView extends Component {
 
 
   continuePlaying() {
+   /* 
    this.setState({...this.state,
       screenMode: SCREEN_PLAY_PAUSE_BTNS,
       players: [
        { ...this.state.players[0], playing: true},
        { ...this.state.players[1]}
-    ]})    
+    ]}) 
+    */  
+    this.playSound(this.state.playMode) 
   }
   
   startOverPlaying() {
