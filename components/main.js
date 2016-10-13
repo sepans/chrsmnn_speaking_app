@@ -239,7 +239,7 @@ class MainView extends Component {
             //const newParaNum = this.state.players[i].paragraph+1
             //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
             //if(seconds > nextParStartTime) {  //TODO when ends
-        console.log(i, player.paragraph, this.speaking)
+        console.log(i, player.paragraph)
         const paraTime = this.speaking[player.paragraph].time
         //console.log('player time: ', i, seconds, paraTime)
         if(seconds < paraTime) {
@@ -261,7 +261,7 @@ class MainView extends Component {
     })  
 
 
-    
+    /*
     const modeBtns = PLAY_MODES.map(d => {
       return (
           <Button style={{color: '#000' ,marginBottom: 30}} key={d}
@@ -270,28 +270,49 @@ class MainView extends Component {
           </Button>
         )
     })
+    */
 
-    const btnColor = playing ? '#FF0000' : '#00FF00'
-    const textBtn = <Button style={{color: '#333', marginTop: 10}} onPress={(e) => this.showText()}>Text</Button>
-    const playPauseBtns =  (
-      <View>
-        <Button key="playpause" 
-                style={{marginLeft: 30}}  
-                onPress={(e) => this.playPause()}>
-          <Text style={{backgroundColor: btnColor, width: 14, height: 14, borderRadius: 7 }} ></Text>
+    const modeBtns = (
+      <View style={{alignItems: 'center'}}>
+        <Button onPress={(e) => this._handlePress(PLAY_MODES[0])}>
+          <View style={{alignItems: 'center'}}>
+            <Text style={styles.normaltext}>speaking is difficult</Text>
+            <Text style={styles.normaltext}>or</Text>
+            <Text style={styles.normaltext}>go on, make me</Text>
+          </View>
         </Button>
-       <View>{textBtn}</View>
+        <Text style={styles.normaltext, styles.or}>or</Text>
+        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[1])}>speaking is difficult / go on, make me</Button>
+        <Text style={styles.normaltext, styles.or}>or</Text>
+        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[2])}>go on, make me / speaking is difficult</Button>
       </View>
     )
+
+    const btnColor = playing ? '#FF0000' : '#00FF00'
+    const textBtn = <Button style={styles.normaltext} onPress={(e) => this.showText()}>text</Button>
+    const playPauseBtns =  (
+      <View style={{flexDirection:'row', alignSelf: 'stretch', padding: 15}}>
+        <View style={{alignItems: 'flex-start', flex: 1 }}>
+          <Button key="playpause" 
+                  
+                  onPress={(e) => this.playPause()}>
+            <Text style={{backgroundColor: btnColor, width: 20, height: 20, borderRadius: 10 }} ></Text>
+          </Button>
+        </View>
+        <View style={{width: 50}}>{textBtn}</View>
+      </View>
+    )
+
     const continueBtns = (
       <View>
         <Button key="continue" 
-                style={{color: '#333'}}  
+                style={styles.normaltext}  
                 onPress={(e) => this.continuePlaying()}>
           resume
         </Button>
+        <View style={{marginTop: 20}}/>
         <Button key="startover" 
-                style={{marginTop: 10, color: '#333'}}  
+                style={styles.normaltext}
                 onPress={(e) => this.startOverPlaying()}>
           start again
         </Button>
@@ -329,7 +350,7 @@ class MainView extends Component {
     */
     const paragraphsUptoNow = this.speaking ? this.speaking.map((cur, i) => {
       //console.log(i, players[0].paragraph)
-      const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 10}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
+      const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
       return <View key={`para-${i}`}>{textEl}</View>
       
     }) : ''
@@ -372,11 +393,14 @@ class MainView extends Component {
           main: { opacity:(2-ratio)/2 }
         })}        
         >
-          <View style={styles.container}>
-          <View>
-            {btns}
+          <View style={styles.headphones}>
+            <Text style={{ color: '#000'}}>for headphones</Text>
           </View>
-        </View>
+          <View style={styles.container}>
+            <View style={{alignSelf: 'stretch',}}>
+              {btns}
+            </View>
+          </View>
         <Button  onPress={(e) => this.clearStorage()}>Delete storage</Button>
       </Drawer>
     )
@@ -562,11 +586,41 @@ class MainView extends Component {
 }
 
 const styles = StyleSheet.create({
-  container: {
+  headphones: {
+    alignItems: 'center',
+    padding: 10,
+
+
+  },
+  or: {
+    paddingTop: 8,
+    paddingBottom: 8,
+    fontWeight: 'normal',
+    fontSize: 14,
+    color: '#000'
+  },
+  normaltext: {
+    fontWeight: 'normal',
+    fontSize: 14,
+    color: '#000'
+  },
+  /*
+  btnsrow: {
+    flexDirection:'row',
     flex: 1,
+    justifyContent: 'flex-end'
+
+  },
+  */
+  centered: {
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#F5FCFF',
+  },
+  container: {
+    flex: 1,
+    flexDirection: 'column',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 })
 
