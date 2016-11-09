@@ -16,6 +16,9 @@ import Sound from 'react-native-sound'
 import Drawer from 'react-native-drawer'
 
 import SpeakingData from './../speaking.json'
+
+import GoonData from './../goon.json'
+
 //var SpeakingData = require('./../speaking.json')
 
 const ONE_OR_A = '1 or A', A_PLUS_ONE = 'A + 1', ONE_PLUS_A = '1 + A'
@@ -67,12 +70,13 @@ class MainView extends Component {
     //this.scrolled = false;
 
     this.state = initialState;
-    const file = 'speaking.mp3'
-    console.log('file', file)
+    const speakingAudio = 'speaking.mp3'
+    const goonAudio = 'goon.mp3'
+    //console.log('file', file)
 
     this.sounds = []
     
-    this.sounds[0] = new Sound(file , Sound.MAIN_BUNDLE, (e) => {
+    this.sounds[0] = new Sound(speakingAudio , Sound.MAIN_BUNDLE, (e) => {
       if (e) {
         console.log('error!!', e)
       } else {
@@ -81,7 +85,7 @@ class MainView extends Component {
       }
     });
 
-    this.sounds[1] = new Sound(file , Sound.MAIN_BUNDLE, (e) => {
+    this.sounds[1] = new Sound(goonAudio, Sound.MAIN_BUNDLE, (e) => {
       if (e) {
         console.log('error!!', e)
       } else {
@@ -154,7 +158,19 @@ class MainView extends Component {
 
       }
     })
+    this.goon = GoonData.paragraphs.map(d => {
+      const parts = d.time_min.split(':')
+      const seconds = (+parts[0])*60 + (+parts[1])
+      return {
+        ...d,
+        time: seconds
+
+      }
+    })
+
     this.setState({...this.state, speakingLoaded: true});
+
+    console.log('goon', this.goon)
     
     //this._setPlayerTimes()
 
@@ -173,8 +189,9 @@ class MainView extends Component {
           //console.log(i, this.state.players[i].paragraph)
           sound.getCurrentTime((seconds) => {
             //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
+            const textSegments = i===0 ? this.speaking : this.goon
             const newParaNum = this.state.players[i].paragraph+1
-            const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
+            const nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
             if(seconds > nextParStartTime) {  //TODO when ends
               if(i===0) {
                 //console.log('prev and new par', i, this.state.players[i].paragraph, newParagraphs)
@@ -183,7 +200,8 @@ class MainView extends Component {
                    { ...this.state.players[1]}
                 ]})
 
-                AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  newParaNum}))
+                AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+                       player1Paragraph: newParaNum, player2Paragraph: this.state.players[1].paragraph}))
 
 
               }
@@ -191,8 +209,10 @@ class MainView extends Component {
                 //console.log('prev and new par', i, this.state.players[i].paragraph, newParagraphs)
                 this.setState({...this.state, players: [
                    { ...this.state.players[0]}, //
-                   { ...this.state.players[1], time: seconds}
+                   { ...this.state.players[1], paragraph: newParaNum, time: seconds}
                 ]})
+                AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+                      player1Paragraph: this.state.players[0].paragraph, player2Paragraph:  newParaNum}))
 
               }
               /*
@@ -240,7 +260,8 @@ class MainView extends Component {
             //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
             //if(seconds > nextParStartTime) {  //TODO when ends
         console.log(i, player.paragraph)
-        const paraTime = this.speaking[player.paragraph].time
+        const textSegments = i===0 ? this.speaking : this.goon
+        const paraTime = textSegments[player.paragraph].time
         //console.log('player time: ', i, seconds, paraTime)
         if(seconds < paraTime) {
           player.time = paraTime
@@ -348,7 +369,9 @@ class MainView extends Component {
       return i <= players[0].paragraph ? <Text key={i}>cur.text</Text> : prev
     }, '') : ''
     */
-    const paragraphsUptoNow = this.speaking ? this.speaking.map((cur, i) => {
+    const textSegments = this.state.mode===ONE_OR_A ? this.goon : this.speaking
+
+    const paragraphsUptoNow = textSegments ? textSegments.map((cur, i) => {
       //console.log(i, players[0].paragraph)
       const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
       return <View key={`para-${i}`}>{textEl}</View>
@@ -516,8 +539,9 @@ class MainView extends Component {
           ]
         })
         break;
-      case ONE_PLUS_A:
-        rand = Math.floor(Math.random() * this.speaking.length)
+      case A_PLUS_ONE:
+        //if A+1, then A plays straight through on left channel and the paras of 1 are randomised and played on right.
+        rand = Math.floor(Math.random() * this.goon.length)
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
@@ -533,15 +557,16 @@ class MainView extends Component {
             {
               playing: true,
               pan: 1,
-              time: this.speaking[rand].time,
+              time: this.goon[rand].time,
               paragraph: rand
 
             }
           ]
         })
         break;
-      case A_PLUS_ONE:
-        rand = Math.floor(Math.random() * this.speaking.length)
+      case ONE_PLUS_A:
+        //if 1+A, then 1 plays L and A is randomised on R
+        rand = Math.floor(Math.random() * this.goon.length)
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
@@ -549,16 +574,16 @@ class MainView extends Component {
           players: [
             {
               playing: true,
-              pan: -1,
-              time: this.speaking[this.state.players[0].paragraph].time,
-              paragraph: this.state.players[0].paragraph
+              pan: 1,
+              time: this.speaking[rand].time,
+              paragraph: rand
 
             },
             {
               playing: true,
-              pan: 1,
-              time: this.speaking[rand].time,
-              paragraph: rand
+              pan: -1,
+              time: this.goon[this.state.players[1].paragraph].time,
+              paragraph: this.state.players[1].paragraph
 
             }
           ]

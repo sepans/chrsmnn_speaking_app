@@ -1,4 +1,9 @@
 
+react-native bundle --dev false --platform android --entry-file index.android.js --bundle-output ./android/app/build/intermediates/assets/debug/index.android.bundle --assets-dest ./android/app/build/intermediates/res/merged/debug
+
+cd android
+./gradlew assembleDebug
+
 first screen: play A or 1. or A + 1 or 1+A.
 if A or 1, then they just play in stereo straight through or until stopped. if stopped, the next session asks to continue/resume or start again. if continue, then it starts at the most recent para.
 if A+1, then A plays straight through on left channel and the paras of 1 are randomised and played on right. at the moment it might be useful if the random paras start playing in the silences between the A paras (which means i'll have to make a note of the end times..
@@ -22,3 +27,13 @@ if text is hit, then the screen slides left and the most recent para of either 1
 the text screen needs to be Right-swipeable to return to screen two. if either the red or green button is hit again, the text prompt disappears.
 otherwise, the host or main audio file always plays Left, the randomised paras of the secondary file always play Right.
 if only 1 or A are chosen, then they play stereo Left and Right.
+
+
+
+speakingisdifficult has 84 paras
+goon,makeme has 75
+when either play solo, they play left and right. 
+when both play, the 'host' plays left, the randomised one plays right.
+the randomised track needs some random silences (empty paras). dont yet know how many, but lets start with easy math and say speaking requires 16 and goon requires 25 silences. (come to think of it, these are not silences so much as nonresponses to the invitation to play in any specific pause in the left channel..
+left track is straight forward. right may start playing a random para (including silence) only at the pauses between paras on the left. right needs to determine whether it is already playing (its possible that one right para will continue playing through two or three left paras and their pauses). 
+hope this makes sense
