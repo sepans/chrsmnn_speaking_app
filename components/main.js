@@ -259,7 +259,7 @@ class MainView extends Component {
             //const newParaNum = this.state.players[i].paragraph+1
             //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
             //if(seconds > nextParStartTime) {  //TODO when ends
-        console.log(i, player.paragraph)
+        console.log('player paragraph', i, player.paragraph)
         const textSegments = i===0 ? this.speaking : this.goon
         const paraTime = textSegments[player.paragraph].time
         //console.log('player time: ', i, seconds, paraTime)
@@ -369,14 +369,17 @@ class MainView extends Component {
       return i <= players[0].paragraph ? <Text key={i}>cur.text</Text> : prev
     }, '') : ''
     */
-    const textSegments = this.state.mode===ONE_OR_A ? this.goon : this.speaking
+    const textSegments = this.state.playMode===ONE_PLUS_A ? this.goon : this.speaking
+    const mainPlayerIndex = this.state.playMode===ONE_PLUS_A ? 1: 0
 
     const paragraphsUptoNow = textSegments ? textSegments.map((cur, i) => {
       //console.log(i, players[0].paragraph)
-      const textEl = (i <= players[0].paragraph) ? <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
+      const textEl = (i <= players[mainPlayerIndex].paragraph) ? <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
       return <View key={`para-${i}`}>{textEl}</View>
       
     }) : ''
+
+    console.log(this.state.playMode, this.state.playMode===ONE_PLUS_A, mainPlayerIndex, paragraphsUptoNow)
 
 
     //console.log('paragraphsUptoNow', paragraphsUptoNow)
@@ -566,7 +569,7 @@ class MainView extends Component {
         break;
       case ONE_PLUS_A:
         //if 1+A, then 1 plays L and A is randomised on R
-        rand = Math.floor(Math.random() * this.goon.length)
+        rand = Math.floor(Math.random() * this.speaking.length)
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
