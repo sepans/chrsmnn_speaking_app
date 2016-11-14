@@ -106,14 +106,28 @@ class MainView extends Component {
         const storedParNum = JSON.parse(value).player1Paragraph
         const playMode = JSON.parse(value).playMode
         console.log('Recovered selection from disk: ', storedParNum);
-        this.setState({...this.state,
+        
+        this.setState({...this.state, storageLoaded: true, screenMode: SCREEN_CONTINUE})
+
+        this.recoveredState = {...this.state,
           storageLoaded: true,
-          screenMode: SCREEN_CONTINUE,
+          screenMode: SCREEN_A_BTNS,
           playMode: playMode,
           players: [
            { ...this.state.players[0], paragraph: storedParNum},
            { ...this.state.players[1]}
-        ]})
+        ]}
+
+        console.log('this', this)
+
+        // this.setState({...this.state,
+        //   storageLoaded: true,
+        //   screenMode: SCREEN_CONTINUE,
+        //   playMode: playMode,
+        //   players: [
+        //    { ...this.state.players[0], paragraph: storedParNum},
+        //    { ...this.state.players[1]}
+        // ]})
 
       }
       else {
@@ -138,10 +152,10 @@ class MainView extends Component {
 
   shouldComponentUpdate(nextProps, nextState) {
     console.log('should update? ', nextState)
-    if(!nextState.storageLoaded || !nextState.speakingLoaded) {
-      console.log('NO')
-      return false
-    }
+    // if(!nextState.storageLoaded || !nextState.speakingLoaded) {
+    //   console.log('NO')
+    //   return false
+    // }
 
     return true;
 
@@ -170,8 +184,6 @@ class MainView extends Component {
 
     this.setState({...this.state, speakingLoaded: true});
 
-    console.log('goon', this.goon)
-    
     //this._setPlayerTimes()
 
     //console.log('SETTTING INTERVAL', TimerMixin.setTimeout)
@@ -356,7 +368,7 @@ class MainView extends Component {
         break;
      //= screenMode===SCREEN_A_BTNS ? modeBtns : playPauseBtns
     }
-    console.log('players[0].paragraph', players[0].paragraph)
+    console.log('player 0 paragraph', players[0].paragraph, 'player 0 paragraph', players[1].paragraph)
     if(this.speaking) {
 
       //console.log(this.speaking[players[0].paragraph], this.speaking[players[0].paragraph].text)
@@ -372,14 +384,24 @@ class MainView extends Component {
     const textSegments = this.state.playMode===ONE_PLUS_A ? this.goon : this.speaking
     const mainPlayerIndex = this.state.playMode===ONE_PLUS_A ? 1: 0
 
+    console.log('mainplayer paragraph',this.state.playMode,  mainPlayerIndex, players[mainPlayerIndex].paragraph)
+
     const paragraphsUptoNow = textSegments ? textSegments.map((cur, i) => {
-      //console.log(i, players[0].paragraph)
-      const textEl = (i <= players[mainPlayerIndex].paragraph) ? <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> : <Text ref={`para-${i}`} style={{height: 0}}></Text>
+      
+      const textEl = (i <= players[mainPlayerIndex].paragraph) ?
+        <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> : 
+        <Text ref={`para-${i}`} style={{height: 0}}></Text>
+
+
+      // const textEl = (i <= players[0].paragraph) ?
+      //   <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> :
+      //   <Text ref={`para-${i}`} style={{height: 0}}></Text>
+      
       return <View key={`para-${i}`}>{textEl}</View>
       
     }) : ''
 
-    console.log(this.state.playMode, this.state.playMode===ONE_PLUS_A, mainPlayerIndex, paragraphsUptoNow)
+    //console.log('textSegments', textSegments)
 
 
     //console.log('paragraphsUptoNow', paragraphsUptoNow)
@@ -499,6 +521,9 @@ class MainView extends Component {
        { ...this.state.players[1]}
     ]}) 
     */  
+    console.log('recoveredState', this.recoveredState)
+    this.setState(this.recoveredState)
+
     this.playSound(this.state.playMode) 
   }
   
@@ -552,14 +577,14 @@ class MainView extends Component {
           players: [
             {
               playing: true,
-              pan: -1,
+              pan: 1,
               time: this.speaking[this.state.players[0].paragraph].time,
               paragraph: this.state.players[0].paragraph
 
             },
             {
               playing: true,
-              pan: 1,
+              pan: -1,
               time: this.goon[rand].time,
               paragraph: rand
 
@@ -577,14 +602,14 @@ class MainView extends Component {
           players: [
             {
               playing: true,
-              pan: 1,
+              pan: -1,
               time: this.speaking[rand].time,
               paragraph: rand
 
             },
             {
               playing: true,
-              pan: -1,
+              pan: 1,
               time: this.goon[this.state.players[1].paragraph].time,
               paragraph: this.state.players[1].paragraph
 
