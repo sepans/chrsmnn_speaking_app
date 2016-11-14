@@ -103,9 +103,10 @@ class MainView extends Component {
     try {
       const value = await AsyncStorage.getItem(STORAGE_KEY);
       if (value !== null) {
-        const storedParNum = JSON.parse(value).player1Paragraph
+        const storedParNum1 = JSON.parse(value).player1Paragraph
+        const storedParNum2 = JSON.parse(value).player2Paragraph
         const playMode = JSON.parse(value).playMode
-        console.log('Recovered selection from disk: ', storedParNum);
+        console.log('Recovered selection from disk: ', storedParNum1, storedParNum2);
         
         this.setState({...this.state, storageLoaded: true, screenMode: SCREEN_CONTINUE})
 
@@ -114,11 +115,11 @@ class MainView extends Component {
           screenMode: SCREEN_A_BTNS,
           playMode: playMode,
           players: [
-           { ...this.state.players[0], paragraph: storedParNum},
-           { ...this.state.players[1]}
+           { ...this.state.players[0], paragraph: storedParNum1, play: true, pan: 1},
+           { ...this.state.players[1], paragraph: storedParNum2, play: true, pan: -1}
         ]}
 
-        console.log('this', this)
+        console.log('this', this.recoveredState)
 
         // this.setState({...this.state,
         //   storageLoaded: true,
@@ -193,20 +194,27 @@ class MainView extends Component {
    //  }, 5000);
     
     this.timer = TimerMixin.setInterval(() => {
-      let newParagraphs = [-1, -1]
       if(this.speaking) {
-       // this.sounds.forEach((sound, i) => {
-         const i = 0
-         const sound = this.sounds[i]
+        this.sounds.forEach((sound, i) => {
+         //const i = 0
+         //const sound = this.sounds[i]
           //console.log(i, this.state.players[i].paragraph)
           sound.getCurrentTime((seconds) => {
             //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
             const textSegments = i===0 ? this.speaking : this.goon
-            const newParaNum = this.state.players[i].paragraph+1
-            const nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+            let newParaNum = this.state.players[i].paragraph+1
+            let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+
+            console.log('sound time', i, seconds, nextParStartTime)
+            
             if(seconds > nextParStartTime) {  //TODO when ends
               if(i===0) {
-                //console.log('prev and new par', i, this.state.players[i].paragraph, newParagraphs)
+                console.log('prev and new par 0', i, this.state.players[i].paragraph)
+                if(this.state.playMode===ONE_PLUS_A) {
+                  newParaNum =  Math.floor(Math.random() * textSegments.length)
+                  let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+                  this.sounds[0].setCurrentTime(nextParStartTime)
+                }
                 this.setState({...this.state, players: [
                    { ...this.state.players[0], paragraph: newParaNum, time: seconds}, //
                    { ...this.state.players[1]}
@@ -218,7 +226,13 @@ class MainView extends Component {
 
               }
               else {
-                //console.log('prev and new par', i, this.state.players[i].paragraph, newParagraphs)
+                
+                if(this.state.playMode===A_PLUS_ONE) {
+                  newParaNum =  Math.floor(Math.random() * textSegments.length)
+                  let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+                  this.sounds[1].setCurrentTime(nextParStartTime)
+                }
+                console.log('prev and new par 1', i, this.state.players[i].paragraph)
                 this.setState({...this.state, players: [
                    { ...this.state.players[0]}, //
                    { ...this.state.players[1], paragraph: newParaNum, time: seconds}
@@ -236,7 +250,7 @@ class MainView extends Component {
             }
 
           })
-        //})
+        })
       }
       /*
       this.setState({...this.state, players: [
@@ -244,7 +258,7 @@ class MainView extends Component {
          { ...this.state.players[1]}
       ]})
       */
-    }, 500)
+    }, 2000)
     
     
 
@@ -524,7 +538,7 @@ class MainView extends Component {
     console.log('recoveredState', this.recoveredState)
     this.setState(this.recoveredState)
 
-    this.playSound(this.state.playMode) 
+    //this.playSound(this.state.playMode) 
   }
   
   startOverPlaying() {
