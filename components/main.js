@@ -112,8 +112,9 @@ class MainView extends Component {
 
         this.recoveredState = {...this.state,
           storageLoaded: true,
-          screenMode: SCREEN_A_BTNS,
+          screenMode: SCREEN_PLAY_PAUSE_BTNS,
           playMode: playMode,
+          playing: true,
           players: [
            { ...this.state.players[0], paragraph: storedParNum1, play: true, pan: 1},
            { ...this.state.players[1], paragraph: storedParNum2, play: true, pan: -1}
@@ -209,8 +210,9 @@ class MainView extends Component {
               //console.log('sound time', i, seconds, nextParStartTime)
 
               if(seconds > nextParStartTime) {  //TODO when ends
+                console.log('track change', i, this.state.players[i], seconds, nextParStartTime)
                 if(i===0) {
-                  console.log('prev and new par 0', i, this.state.players[i].paragraph)
+                  console.log('prev and new par 0', i, newParaNum, this.state.players[i].paragraph)
                   if(this.state.playMode===ONE_PLUS_A) {
                     newParaNum =  Math.floor(Math.random() * textSegments.length)
                     let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
@@ -476,7 +478,6 @@ class MainView extends Component {
 
   scrollContentSizeChanged(contentWidth, contentHeight) {
       const scorllHeight = 0
-      console.log(contentHeight)
       if(this.refs.textscroll)
       {
         this.refs.textscroll.scrollTo({y: contentHeight - scorllHeight , animated:true});
