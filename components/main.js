@@ -5,7 +5,8 @@ import {
   View,
   ScrollView,
   ListView,
-  AsyncStorage
+  AsyncStorage,
+  AppState
 } from 'react-native'
 
 import TimerMixin from 'react-timer-mixin';
@@ -120,7 +121,7 @@ class MainView extends Component {
            { ...this.state.players[1], paragraph: storedParNum2, play: true, pan: -1}
         ]}
 
-        console.log('this', this.recoveredState)
+        console.log('recoveredState ', this.recoveredState)
 
         // this.setState({...this.state,
         //   storageLoaded: true,
@@ -153,7 +154,7 @@ class MainView extends Component {
   */
 
   shouldComponentUpdate(nextProps, nextState) {
-    console.log('should update? ', nextState)
+    //console.log('should update? ', nextState)
     // if(!nextState.storageLoaded || !nextState.speakingLoaded) {
     //   console.log('NO')
     //   return false
@@ -164,6 +165,9 @@ class MainView extends Component {
   }
 
   componentDidMount() {
+
+    AppState.addEventListener('change', this._handleAppStateChange);
+
     this._loadInitialState().done()
     this.speaking = SpeakingData.paragraphs.map(d => {
       const parts = d.time_min.split(':')
@@ -268,18 +272,62 @@ class MainView extends Component {
 
   }
 
+  componentWillUpdate(nextProps, nextState) {
+    //check if a player is being changed to playing
+
+    const { players, playing } = this.state
+    const nextPlayers = nextState.players
+    const nextPlaying = nextState.playing
+
+    players.forEach((player, i) => {
+      if(player.playing ===! nextPlayers[i].playing || playing!==nextPlaying) {
+        console.log(`player ${i} mode changed to ${nextPlayers[i].playing}`)
+        const sound = this.sounds[i]
+        sound.getCurrentTime((seconds) => {
+          const textSegments = i===0 ? this.speaking : this.goon
+          const paraTime = textSegments[player.paragraph].time
+          console.log('setting time? player ', i, ' paragraph ',  player.paragraph, ' seconds ', seconds, 'paraTime', paraTime)
+          if(seconds < paraTime) {
+            //player.time = paraTime  // needs setstate not allowed here. needed? should be set in setinterval
+          }
+          if(seconds<1) {  //TODO: this.speaking needed?  //TODO set anyways because when paused state.playing is false
+           // sound.setCurrentTime(player.time)
+          }
+          console.log('setting pan ', i, nextPlayers[i].pan)
+
+          sound.setPan(nextPlayers[i].pan)
+
+          if(nextPlaying && nextPlayers[i].playing) {
+            console.log('playing ', i)
+            sound.play()
+          }
+          else {
+            console.log('pause ', i)
+            sound.pause()
+          }
+
+        })
+      }
+    })
+
+
+
+
+
+  }
+
 
   render() {
 
     console.log('state', this.state)
 
     if(!this.state.storageLoaded || !this.state.speakingLoaded) {
-      return <View/>
+      return <View><Text>Loading</Text></View>
     }
 
-    const { players, playing, screenMode} = this.state
+    const { players, playing, screenMode, playMode} = this.state
 
-
+    /*
     this.sounds.forEach((sound, i) => {
       const player = players[i]
       //console.log('parag time', i, player.paragraph, player.time)
@@ -288,10 +336,9 @@ class MainView extends Component {
             //const newParaNum = this.state.players[i].paragraph+1
             //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
             //if(seconds > nextParStartTime) {  //TODO when ends
-        console.log('player paragraph', i, player.paragraph)
         const textSegments = i===0 ? this.speaking : this.goon
         const paraTime = textSegments[player.paragraph].time
-        //console.log('player time: ', i, seconds, paraTime)
+        console.log('player ', i, ' paragraph ',  player.paragraph, ' seconds ', seconds, 'paraTime', paraTime)
         if(seconds < paraTime) {
           player.time = paraTime
         }
@@ -303,12 +350,14 @@ class MainView extends Component {
       })
       sound.setPan(player.pan)
       if(playing && player.playing) {
+        console.log('playing ', i)
         sound.play()
       }
       else {
         sound.pause()
       }
     })
+    */
 
 
     /*
@@ -398,15 +447,16 @@ class MainView extends Component {
       return i <= players[0].paragraph ? <Text key={i}>cur.text</Text> : prev
     }, '') : ''
     */
-    const textSegments = this.state.playMode===ONE_PLUS_A ? this.goon : this.speaking
-    const mainPlayerIndex = this.state.playMode===ONE_PLUS_A ? 1: 0
+    const textSegments = playMode===ONE_PLUS_A ? this.goon : this.speaking
+    const mainPlayerIndex = playMode===ONE_PLUS_A ? 1: 0
 
-    console.log('mainplayer paragraph',this.state.playMode,  mainPlayerIndex, players[mainPlayerIndex].paragraph)
+
+    console.log('mainplayer paragraph', playMode, mainPlayerIndex, players[mainPlayerIndex].paragraph)
 
     const paragraphsUptoNow = textSegments ? textSegments.map((cur, i) => {
 
       const textEl = (i <= players[mainPlayerIndex].paragraph) ?
-        <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> :
+        <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'left', color: '#333'}}>{cur.text}</Text> :
         <Text ref={`para-${i}`} style={{height: 0}}></Text>
 
 
@@ -418,10 +468,18 @@ class MainView extends Component {
 
     }) : ''
 
-    //console.log('textSegments', textSegments)
+    if(playMode!==ONE_OR_A)
+    {
+      const otherTextSegments = playMode===ONE_PLUS_A ? this.speaking : this.goon
+      const otherPlayer = playMode===ONE_PLUS_A ? 0: 1
 
+      //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments, otherTextSegments[this.state.players[otherPlayer].paragraph])
+      const currentRandomParagraph = otherTextSegments[this.state.players[otherPlayer].paragraph]
+      const rightParagraph = <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{otherTextSegments}</Text>
+      //paragraphsUptoNow.push(rightParagraph)
+      console.log(rightParagraph)
+    }
 
-    //console.log('paragraphsUptoNow', paragraphsUptoNow)
     const text = (
       <ScrollView ref="textscroll" onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollContentSizeChanged(contentWidth, contentHeight)}}>
         <View>{this.speaking ? paragraphsUptoNow : null}</View>
@@ -518,7 +576,6 @@ class MainView extends Component {
 
   _handlePress(mode) {
         console.log('Pressed!!!!', mode)
-        console.log(SpeakingData)
         this.playSound(mode)
   }
 
@@ -546,12 +603,7 @@ class MainView extends Component {
   startOverPlaying() {
     //this.setState({...this.state, screenMode: SCREEN_A_BTNS, players})
 
-    this.setState({...this.state,
-      screenMode: SCREEN_A_BTNS,
-      players: [
-       { ...this.state.players[0], paragraph: 0, time: 0},
-       { ...this.state.players[1]}
-    ]})
+    this.setState({...this.state, screenMode: SCREEN_A_BTNS})
 
   }
 
@@ -641,9 +693,20 @@ class MainView extends Component {
   componentWillUnmount() {
 
     //TimerMixin.clearTimeout(this.timer);
+    this.cleanup()
+  }
+
+  _handleAppStateChange(state) {
+    console.log('state changed', state)
+    if (state === 'inactive') {
+      this.cleanup()
+    }
+  }
+
+  cleanup() {
     TimerMixin.clearInterval(this.timer);
 
-    console.log('unmounting')
+    console.log('cleaning up')
     this.sounds[0].stop()
     this.sounds[1].stop()
 
@@ -653,6 +716,7 @@ class MainView extends Component {
   }
 
 }
+
 
 const styles = StyleSheet.create({
   headphones: {
