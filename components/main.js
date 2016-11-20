@@ -470,21 +470,22 @@ class MainView extends Component {
 
     }) : ''
 
-    if(playMode!==ONE_OR_A)
-    {
-      const otherTextSegments = playMode===ONE_PLUS_A ? this.speaking : this.goon
-      const otherPlayer = playMode===ONE_PLUS_A ? 0: 1
 
-      //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments, otherTextSegments[this.state.players[otherPlayer].paragraph])
-      const currentRandomParagraph = otherTextSegments[this.state.players[otherPlayer].paragraph]
-      const rightParagraph = <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{otherTextSegments}</Text>
-      //paragraphsUptoNow.push(rightParagraph)
-      console.log(rightParagraph)
-    }
+
+    const otherTextSegments = playMode===ONE_PLUS_A ? this.speaking : this.goon
+    const otherPlayer = playMode===ONE_PLUS_A ? 0: 1
+
+    //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments, otherTextSegments[this.state.players[otherPlayer].paragraph])
+    const currentRandomParagraph = otherTextSegments[this.state.players[otherPlayer].paragraph].text
+    //console.log('currentRandomParagraph', currentRandomParagraph)
+    const rightParagraph = playMode!==ONE_OR_A ?
+      <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{currentRandomParagraph}</Text> :
+      <Text></Text>
+
 
     const text = (
       <ScrollView ref="textscroll" onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollContentSizeChanged(contentWidth, contentHeight)}}>
-        <View>{this.speaking ? paragraphsUptoNow : null}</View>
+        <View>{this.speaking ? paragraphsUptoNow : null}</View><View>{rightParagraph}</View>
       </ScrollView>
     )
     //console.log(text)
