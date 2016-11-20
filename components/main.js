@@ -210,16 +210,18 @@ class MainView extends Component {
               const textSegments = i===0 ? this.speaking : this.goon
               let newParaNum = this.state.players[i].paragraph+1
               let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+              const nextNextParStartTime = (textSegments[this.state.players[i].paragraph+2] || {time: 0}).time
 
-              //console.log('sound time', i, seconds, nextParStartTime)
+              console.log('sound time', i, 'seconds', seconds, 'nextParStartTime', nextParStartTime)
 
-              if(seconds > nextParStartTime) {  //TODO when ends
+              // also check against currentParStartTime to avoid track change fluctuations, getCurrentTime has lag
+              if(seconds > nextParStartTime && seconds < nextNextParStartTime) {  //TODO when ends
                 console.log('track change', i, this.state.players[i], seconds, nextParStartTime)
                 if(i===0) {
                   console.log('prev and new par 0', i, newParaNum, this.state.players[i].paragraph)
                   if(this.state.playMode===ONE_PLUS_A) {
                     newParaNum =  Math.floor(Math.random() * textSegments.length)
-                    let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+                    nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
                     this.sounds[0].setCurrentTime(nextParStartTime)
                   }
                   this.setState({...this.state, players: [
@@ -236,7 +238,7 @@ class MainView extends Component {
 
                   if(this.state.playMode===A_PLUS_ONE) {
                     newParaNum =  Math.floor(Math.random() * textSegments.length)
-                    let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
+                    nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
                     this.sounds[1].setCurrentTime(nextParStartTime)
                   }
                   console.log('prev and new par 1', i, this.state.players[i].paragraph)
@@ -291,7 +293,7 @@ class MainView extends Component {
             //player.time = paraTime  // needs setstate not allowed here. needed? should be set in setinterval
           }
           if(seconds<1) {  //TODO: this.speaking needed?  //TODO set anyways because when paused state.playing is false
-           // sound.setCurrentTime(player.time)
+            sound.setCurrentTime(nextPlayers[i].time) //needed for the first time
           }
           console.log('setting pan ', i, nextPlayers[i].pan)
 
