@@ -22,7 +22,7 @@ import GoonData from './../goon.json'
 
 //var SpeakingData = require('./../speaking.json')
 
-const ONE_OR_A = '1 or A', A_PLUS_ONE = 'A + 1', ONE_PLUS_A = '1 + A'
+const ONE_OR_A = 'ONE_OR_A', A_PLUS_ONE = 'A_PLUS_ONE', ONE_PLUS_A = 'ONE_PLUS_A'
 
 const PLAY_MODES = [ ONE_OR_A, A_PLUS_ONE, ONE_PLUS_A]
 
@@ -76,6 +76,7 @@ class MainView extends Component {
     //console.log('file', file)
 
     this.sounds = []
+    this.timer = []
 
     this.sounds[0] = new Sound(speakingAudio , Sound.MAIN_BUNDLE, (e) => {
       if (e) {
@@ -117,8 +118,18 @@ class MainView extends Component {
           playMode: playMode,
           playing: true,
           players: [
-           { ...this.state.players[0], paragraph: storedParNum1, play: true, pan: 1},
-           { ...this.state.players[1], paragraph: storedParNum2, play: true, pan: -1}
+            { ...this.state.players[0],
+              paragraph: storedParNum1,
+              playing: true,
+              time: this.speaking[storedParNum1].time,
+              pan: playMode===A_PLUS_ONE ? -1 : 1
+            },
+            { ...this.state.players[1],
+              paragraph: storedParNum2,
+              playing: true,
+              time: this.goon[storedParNum2].time,
+              pan: playMode===A_PLUS_ONE ? 1 : -1
+            }
         ]}
 
         console.log('recoveredState ', this.recoveredState)
@@ -198,79 +209,6 @@ class MainView extends Component {
    //    console.log('TIMER!!!! I do not leak!');
    //  }, 5000);
 
-    this.timer = TimerMixin.setInterval(() => {
-      if(this.speaking) {
-        this.sounds.forEach((sound, i) => {
-         //const i = 0
-         //const sound = this.sounds[i]
-          //console.log(i, this.state.players[i].paragraph)
-          if(this.state.playing && this.state.players[i].playing)
-            sound.getCurrentTime((seconds) => {
-              //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
-              const textSegments = i===0 ? this.speaking : this.goon
-              let newParaNum = this.state.players[i].paragraph+1
-              let nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
-              const nextNextParStartTime = (textSegments[this.state.players[i].paragraph+2] || {time: 0}).time
-
-              console.log('sound time', i, 'seconds', seconds, 'nextParStartTime', nextParStartTime)
-
-              // also check against currentParStartTime to avoid track change fluctuations, getCurrentTime has lag
-              if(seconds > nextParStartTime && seconds < nextNextParStartTime) {  //TODO when ends
-                console.log('track change', i, this.state.players[i], seconds, nextParStartTime)
-                if(i===0) {
-                  console.log('prev and new par 0', i, newParaNum, this.state.players[i].paragraph)
-                  if(this.state.playMode===ONE_PLUS_A) {
-                    newParaNum =  Math.floor(Math.random() * textSegments.length)
-                    nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
-                    this.sounds[0].setCurrentTime(nextParStartTime)
-                  }
-                  this.setState({...this.state, players: [
-                     { ...this.state.players[0], paragraph: newParaNum, time: seconds}, //
-                     { ...this.state.players[1]}
-                  ]})
-
-                  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
-                         player1Paragraph: newParaNum, player2Paragraph: this.state.players[1].paragraph}))
-
-
-                }
-                else {
-
-                  if(this.state.playMode===A_PLUS_ONE) {
-                    newParaNum =  Math.floor(Math.random() * textSegments.length)
-                    nextParStartTime = (textSegments[newParaNum] || {time: 0}).time
-                    this.sounds[1].setCurrentTime(nextParStartTime)
-                  }
-                  console.log('prev and new par 1', i, this.state.players[i].paragraph)
-                  this.setState({...this.state, players: [
-                     { ...this.state.players[0]}, //
-                     { ...this.state.players[1], paragraph: newParaNum, time: seconds}
-                  ]})
-                  AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
-                        player1Paragraph: this.state.players[0].paragraph, player2Paragraph:  newParaNum}))
-
-                }
-                /*
-                this.setState({...this.state, players: [
-                   { ...this.state.players[i], paragraph: this.state.players[i].paragraph+1}
-                ]})
-                */
-
-              }
-
-            })
-        })
-      }
-      /*
-      this.setState({...this.state, players: [
-         { ...this.state.players[0], paragraph: this.state.players[0].paragraph+1},
-         { ...this.state.players[1]}
-      ]})
-      */
-    }, 2000)
-
-
-
 
   }
 
@@ -281,19 +219,22 @@ class MainView extends Component {
     const nextPlayers = nextState.players
     const nextPlaying = nextState.playing
 
+    console.log('playing? ', playing, nextPlaying)
+
     players.forEach((player, i) => {
+      //console.log(`player ${i} mode was ${player.playing} now ${nextPlayers[i].playing}`)
       if(player.playing ===! nextPlayers[i].playing || playing!==nextPlaying) {
         console.log(`player ${i} mode changed to ${nextPlayers[i].playing}`)
         const sound = this.sounds[i]
         sound.getCurrentTime((seconds) => {
           const textSegments = i===0 ? this.speaking : this.goon
-          const paraTime = textSegments[player.paragraph].time
+          const paraTime = textSegments[nextPlayers[i].paragraph].time
           console.log('setting time? player ', i, ' paragraph ',  player.paragraph, ' seconds ', seconds, 'paraTime', paraTime)
           if(seconds < paraTime) {
             //player.time = paraTime  // needs setstate not allowed here. needed? should be set in setinterval
           }
           if(seconds<1) {  //TODO: this.speaking needed?  //TODO set anyways because when paused state.playing is false
-            sound.setCurrentTime(nextPlayers[i].time) //needed for the first time
+            sound.setCurrentTime(paraTime) //needed for the first time
           }
           console.log('setting pan ', i, nextPlayers[i].pan)
 
@@ -306,6 +247,11 @@ class MainView extends Component {
           else {
             console.log('pause ', i)
             sound.pause()
+
+            TimerMixin.clearTimeout(this.timer[i])
+
+
+            //TODO reschedule interval!
           }
 
         })
@@ -321,7 +267,7 @@ class MainView extends Component {
 
   render() {
 
-    console.log('state', this.state)
+    console.log('------ RENDER, state', this.state)
 
     if(!this.state.storageLoaded || !this.state.speakingLoaded) {
       return <View><Text>Loading</Text></View>
@@ -329,37 +275,7 @@ class MainView extends Component {
 
     const { players, playing, screenMode, playMode} = this.state
 
-    /*
-    this.sounds.forEach((sound, i) => {
-      const player = players[i]
-      //console.log('parag time', i, player.paragraph, player.time)
-      sound.getCurrentTime((seconds) => {
-            //console.log(seconds, this.speaking[this.state.players[i].paragraph + 1].time)
-            //const newParaNum = this.state.players[i].paragraph+1
-            //const nextParStartTime = (this.speaking[newParaNum] || {time: 0}).time
-            //if(seconds > nextParStartTime) {  //TODO when ends
-        const textSegments = i===0 ? this.speaking : this.goon
-        const paraTime = textSegments[player.paragraph].time
-        console.log('player ', i, ' paragraph ',  player.paragraph, ' seconds ', seconds, 'paraTime', paraTime)
-        if(seconds < paraTime) {
-          player.time = paraTime
-        }
-        if(this.speaking && seconds<1) {  //TODO: this.speaking needed?
-          //player.time = this.speaking[player.paragraph].time
-          //console.log('SETTING TIME TO ',i , player.time)
-          sound.setCurrentTime(player.time)
-        }
-      })
-      sound.setPan(player.pan)
-      if(playing && player.playing) {
-        console.log('playing ', i)
-        sound.play()
-      }
-      else {
-        sound.pause()
-      }
-    })
-    */
+
 
 
     /*
@@ -437,18 +353,7 @@ class MainView extends Component {
      //= screenMode===SCREEN_A_BTNS ? modeBtns : playPauseBtns
     }
     console.log('player 0 paragraph', players[0].paragraph, 'player 0 paragraph', players[1].paragraph)
-    if(this.speaking) {
 
-      //console.log(this.speaking[players[0].paragraph], this.speaking[players[0].paragraph].text)
-
-    }
-    /*
-    const paragraphsUptoNow = this.speaking ? this.speaking.reduce((prev, cur, i) => {
-      console.log(i, players[0].paragraph)
-      const content =
-      return i <= players[0].paragraph ? <Text key={i}>cur.text</Text> : prev
-    }, '') : ''
-    */
     const textSegments = playMode===ONE_PLUS_A ? this.goon : this.speaking
     const mainPlayerIndex = playMode===ONE_PLUS_A ? 1: 0
 
@@ -471,13 +376,14 @@ class MainView extends Component {
     }) : ''
 
 
-
     const otherTextSegments = playMode===ONE_PLUS_A ? this.speaking : this.goon
-    const otherPlayer = playMode===ONE_PLUS_A ? 0: 1
+    const otherPlayer = playMode===ONE_PLUS_A ? 0 : 1
 
-    //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments, otherTextSegments[this.state.players[otherPlayer].paragraph])
     const currentRandomParagraph = otherTextSegments[this.state.players[otherPlayer].paragraph].text
+
     //console.log('currentRandomParagraph', currentRandomParagraph)
+    //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments[this.state.players[otherPlayer].paragraph])
+
     const rightParagraph = playMode!==ONE_OR_A ?
       <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{currentRandomParagraph}</Text> :
       <Text></Text>
@@ -598,7 +504,11 @@ class MainView extends Component {
     ]})
     */
     console.log('recoveredState', this.recoveredState)
-    this.setState(this.recoveredState)
+    this.setState(this.recoveredState, () => {
+      this.scheduleNextTrack(0)
+      this.scheduleNextTrack(1)
+    })
+
 
     //this.playSound(this.state.playMode)
   }
@@ -608,6 +518,121 @@ class MainView extends Component {
 
     this.setState({...this.state, screenMode: SCREEN_A_BTNS})
 
+  }
+
+
+  scheduleNextTrack(i) {
+
+    const {players, playMode, playing} = this.state
+
+    player = players[i]
+
+    console.log('schedule player', player)
+
+    if(player.playing && playing) {
+      const textSegments = i===0 ? this.speaking : this.goon
+      //TODO if player.paragraph + 1 > thisSegments.length
+      const nextSectionStart = (player.paragraph + 1 === textSegments.length) ?
+         this.sounds[i].getDuration() :
+         textSegments[player.paragraph + 1].time
+
+      const duration = nextSectionStart - player.time
+
+      console.log(i, 'nextSectionStart', nextSectionStart, 'duration', duration)
+
+      this.timer[i] = TimerMixin.setTimeout(() => {
+
+        this.timeIsUp(i)
+
+
+
+      }, duration * 1000)
+    }
+
+  }
+
+  timeIsUp(i) {
+
+    const { playMode } = this.state
+
+    const textSegments = i===0 ? this.speaking : this.goon
+
+    console.log(' ----- Time is up for ', i)
+    if(!this.state.players[i].playing || !this.state.playing) {
+      return
+    }
+
+    if (i===0 && playMode===ONE_PLUS_A) {
+
+
+      const newPragraphNum = Math.floor(Math.random() * textSegments.length)
+      const newTime = textSegments[newPragraphNum].time
+
+      console.log('randomizing ', i, ' to ', newPragraphNum)
+
+      this.setState({...this.state, players: [
+               { ...this.state.players[0], paragraph: newPragraphNum, time: newTime}, //
+               { ...this.state.players[1]}
+      ]})
+
+      this.sounds[i].setCurrentTime(newTime)
+
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+             player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph}))
+
+
+    }
+    else if (i===1 && playMode===A_PLUS_ONE) {
+
+      const newPragraphNum = Math.floor(Math.random() * textSegments.length)
+      const newTime = textSegments[newPragraphNum].time
+
+      console.log('randomizing ', i, ' to ', newPragraphNum)
+
+      this.setState({...this.state, players: [
+               { ...this.state.players[0]}, //
+               { ...this.state.players[1], paragraph: newPragraphNum, time: newTime}
+      ]})
+
+      this.sounds[i].setCurrentTime(newTime)
+
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+             player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum}))
+
+
+    }
+    else if (i===0) {
+      //TODO if player.paragraph + 1 > thisSegments.length
+      const newPragraphNum = this.state.players[i].paragraph + 1
+      const newTime = textSegments[newPragraphNum].time
+
+      console.log('continue ', i, ' with ', newPragraphNum)
+
+      this.setState({...this.state, players: [
+               { ...this.state.players[0], paragraph: newPragraphNum, time: newTime}, //
+               { ...this.state.players[1]}
+      ]})
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+             player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph}))
+
+    }
+    else if (i===1) {
+
+      const newPragraphNum = this.state.players[i].paragraph + 1
+      const newTime = textSegments[newPragraphNum].time
+
+      console.log('continue ', i, ' with ', newPragraphNum)
+
+      this.setState({...this.state, players: [
+               { ...this.state.players[0]}, //
+               { ...this.state.players[1], paragraph: newPragraphNum, time: newTime}
+      ]})
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+             player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum}))
+
+    }
+
+    this.scheduleNextTrack(i)
   }
 
   playSound(mode) {
@@ -636,7 +661,10 @@ class MainView extends Component {
 
             }
           ]
-        })
+        }, () => {
+            this.scheduleNextTrack(0)
+          }
+        )
         break;
       case A_PLUS_ONE:
         //if A+1, then A plays straight through on left channel and the paras of 1 are randomised and played on right.
@@ -661,7 +689,11 @@ class MainView extends Component {
 
             }
           ]
-        })
+        }, () => {
+            this.scheduleNextTrack(0)
+            this.scheduleNextTrack(1)
+          }
+        )
         break;
       case ONE_PLUS_A:
         //if 1+A, then 1 plays L and A is randomised on R
@@ -686,9 +718,17 @@ class MainView extends Component {
 
             }
           ]
-        })
+        }, () => {
+            this.scheduleNextTrack(0)
+            this.scheduleNextTrack(1)
+          }
+        )
         break;
     }
+
+    //this.scheduleNextTrack(0)
+    //this.scheduleNextTrack(1)
+
 
 
   }
@@ -707,7 +747,8 @@ class MainView extends Component {
   }
 
   cleanup() {
-    TimerMixin.clearInterval(this.timer);
+    TimerMixin.clearTimeout(this.timer[0])
+    TimerMixin.clearTimeout(this.timer[1])
 
     console.log('cleaning up')
     this.sounds[0].stop()
