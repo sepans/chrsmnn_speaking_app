@@ -122,13 +122,13 @@ class MainView extends Component {
               paragraph: storedParNum1,
               playing: true,
               time: this.speaking[storedParNum1].time,
-              pan: playMode===A_PLUS_ONE ? -1 : 1
+              pan: playMode===A_PLUS_ONE ? 1 : -1
             },
             { ...this.state.players[1],
               paragraph: storedParNum2,
               playing: true,
               time: this.goon[storedParNum2].time,
-              pan: playMode===A_PLUS_ONE ? 1 : -1
+              pan: playMode===A_PLUS_ONE ? -1 : 1
             }
         ]}
 
@@ -242,6 +242,11 @@ class MainView extends Component {
 
           if(nextPlaying && nextPlayers[i].playing) {
             console.log('playing ', i)
+            if(playing===false) { //was paused
+
+              this.scheduleNextTrack(i, seconds)
+
+            }
             sound.play()
           }
           else {
@@ -521,7 +526,7 @@ class MainView extends Component {
   }
 
 
-  scheduleNextTrack(i) {
+  scheduleNextTrack(i, pausedSeconds) {
 
     const {players, playMode, playing} = this.state
 
@@ -536,7 +541,7 @@ class MainView extends Component {
          this.sounds[i].getDuration() :
          textSegments[player.paragraph + 1].time
 
-      const duration = nextSectionStart - player.time
+      const duration = nextSectionStart - (pausedSeconds ? pausedSeconds : player.time)
 
       console.log(i, 'nextSectionStart', nextSectionStart, 'duration', duration)
 
