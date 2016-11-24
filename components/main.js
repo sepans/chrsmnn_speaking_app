@@ -247,7 +247,10 @@ class MainView extends Component {
               this.scheduleNextTrack(i, seconds)
 
             }
-            sound.play()
+
+            sound.play((e) => {
+              console.log('ERROR playing ', i, e)
+            })
           }
           else {
             console.log('pause ', i)
