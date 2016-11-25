@@ -130,13 +130,13 @@ class MainView extends Component {
           { ...this.state.players[0],
             paragraph: storedParNum1,
             playing: true,
-            //time: this.speaking[storedParNum1].time, //TODO fix time
+            time: this.speaking[storedParNum1].time, //TODO fix time
             pan: playMode===A_PLUS_ONE ? 1 : -1
           },
           { ...this.state.players[1],
             paragraph: storedParNum2,
             playing: true,
-            //time: this.goon[storedParNum2].time, //TODO fix time
+            time: this.goon[storedParNum2].time, //TODO fix time
             pan: playMode===A_PLUS_ONE ? -1 : 1
           }
       ]}
@@ -229,12 +229,13 @@ class MainView extends Component {
 
     players.forEach((player, i) => {
       //console.log(`player ${i} mode was ${player.playing} now ${nextPlayers[i].playing}`)
-      if(player.playing ===! nextPlayers[i].playing || playing!==nextPlaying) {
+      //if(player.playing ===! nextPlayers[i].playing || playing!==nextPlaying) {
         console.log(`player ${i} mode changed to ${nextPlayers[i].playing}`)
         //sound.getCurrentTime((seconds) => {
           const textSegments = i===0 ? this.speaking : this.goon
           const paraTime = textSegments[nextPlayers[i].paragraph].time
-          console.log('setting time? player ', i, ' paragraph ',  player.paragraph,  'paraTime', paraTime)
+          console.log('setting time? player ', i, ' paragraph ',  player.paragraph,
+                     'paraTime', paraTime, 'this.soundParagraphs[i]', this.soundParagraphs[i])
           //if(seconds < paraTime) {
             //player.time = paraTime  // needs setstate not allowed here. needed? should be set in setinterval
           //}
@@ -245,7 +246,7 @@ class MainView extends Component {
 
             const filePrefix = i===0 ? 'speaking_' : 'goon_'
 
-            console.log('releasing prev sound')
+            //console.log('releasing prev sound')
             //if(this.sounds[i])  {
               //this.sounds[i].release()
             //}
@@ -260,31 +261,7 @@ class MainView extends Component {
 
                 console.log('sound ready', this.sounds[i].getDuration())
 
-              if(nextPlaying && nextPlayers[i].playing) {
-
-                console.log('setting pan ', i, nextPlayers[i].pan)
-
-                sound.setPan(nextPlayers[i].pan)
-
-                console.log('playing ', i)
-
-                sound.play((success) => {
-                  if(success) {
-                    console.log('finished playing', i)
-
-                    this.sounds[i].release()
-                  }
-                  else {
-
-                    console.log('ERROR or end playing ', i)
-                  }
-                })
-              }
-              else {
-                console.log('pause ', i)
-                sound.pause()
-
-              }
+                this.playPauseSound(i, sound, nextPlayers[i], nextPlaying)
 
             }
 
@@ -300,36 +277,16 @@ class MainView extends Component {
 
           console.log('already loaded, playing... ', i)
 
+          if(player.playing ===! nextPlayers[i].playing || playing!==nextPlaying) {
 
-          if(nextPlaying && nextPlayers[i].playing) {
-
-            console.log('setting pan ', i, nextPlayers[i].pan)
-
-            sound.setPan(nextPlayers[i].pan)
-
-            console.log('playing ', i)
-
-            sound.play((success) => {
-              if(success) {
-                console.log('finished playing', i)
-              }
-              else {
-
-                console.log('ERROR or end playing ', i)
-              }
-            })
-          }
-          else {
-            console.log('pause ', i)
-            sound.pause()
-
+            this.playPauseSound(i, sound, nextPlayers[i], nextPlaying)
           }
 
         }
 
 
         //})
-      }
+      //}
     })
 
 
@@ -338,8 +295,35 @@ class MainView extends Component {
 
   }
 
-  playSound(sound, player) {
+  playPauseSound(i, sound, player, playing) {
+    if(playing && player.playing) {
 
+      console.log('setting pan ', i, player.pan)
+
+      sound.setPan(player.pan)
+
+      console.log('playing ', i)
+
+      sound.play((success) => {
+        if(success) {
+          console.log('finished playing', i)
+
+          sound.release()
+
+          this.timeIsUp(i)
+
+        }
+        else {
+
+          console.log('ERROR or end playing ', i)
+        }
+      })
+    }
+    else {
+      console.log('pause ', i)
+      sound.pause()
+
+    }
   }
 
 
@@ -653,7 +637,7 @@ class MainView extends Component {
                { ...this.state.players[1]}
       ]})
 
-      this.sounds[i].setCurrentTime(newTime)
+      //this.sounds[i].setCurrentTime(newTime)
 
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
              player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph}))
@@ -672,7 +656,7 @@ class MainView extends Component {
                { ...this.state.players[1], paragraph: newPragraphNum, time: newTime}
       ]})
 
-      this.sounds[i].setCurrentTime(newTime)
+      //this.sounds[i].setCurrentTime(newTime)
 
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
              player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum}))
