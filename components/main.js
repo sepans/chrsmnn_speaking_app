@@ -9,8 +9,8 @@ import {
   AppState
 } from 'react-native'
 
-import TimerMixin from 'react-timer-mixin';
-const reactMixin = require('react-mixin');
+//import TimerMixin from 'react-timer-mixin';
+//const reactMixin = require('react-mixin');
 
 import Button from 'react-native-button'
 import Sound from 'react-native-sound'
@@ -71,14 +71,16 @@ class MainView extends Component {
     //this.scrolled = false;
 
     this.state = initialState;
-    const speakingAudio = 'speaking.mp3'
-    const goonAudio = 'goon.mp3'
+    //const speakingAudio = 'speaking_0.mp3'
+    //const goonAudio = 'goon_0.mp3'
     //console.log('file', file)
 
     this.sounds = []
+    this.soundParagraphs = [-1, -1]
     this.timer = []
 
-    this.sounds[0] = new Sound(speakingAudio , Sound.MAIN_BUNDLE, (e) => {
+    /*
+    this.sounds[0] = new Sound('speaking_' + this.soundParagraphs[0] , Sound.MAIN_BUNDLE, (e) => {
       if (e) {
         console.log('error!!', e)
       } else {
@@ -87,7 +89,7 @@ class MainView extends Component {
       }
     });
 
-    this.sounds[1] = new Sound(goonAudio, Sound.MAIN_BUNDLE, (e) => {
+    this.sounds[1] = new Sound('goon_' + this.soundParagraphs[0], Sound.MAIN_BUNDLE, (e) => {
       if (e) {
         console.log('error!!', e)
       } else {
@@ -95,6 +97,7 @@ class MainView extends Component {
         console.log('sound ready', this.sounds[1].getDuration())
       }
     });
+    */
 
 
 
@@ -102,54 +105,57 @@ class MainView extends Component {
 
   async _loadInitialState() {
     console.log('INITIAL STATE')
+    let value
     try {
-      const value = await AsyncStorage.getItem(STORAGE_KEY);
-      if (value !== null) {
-        const storedParNum1 = JSON.parse(value).player1Paragraph
-        const storedParNum2 = JSON.parse(value).player2Paragraph
-        const playMode = JSON.parse(value).playMode
-        console.log('Recovered selection from disk: ', storedParNum1, storedParNum2);
-
-        this.setState({...this.state, storageLoaded: true, screenMode: SCREEN_CONTINUE})
-
-        this.recoveredState = {...this.state,
-          storageLoaded: true,
-          screenMode: SCREEN_PLAY_PAUSE_BTNS,
-          playMode: playMode,
-          playing: true,
-          players: [
-            { ...this.state.players[0],
-              paragraph: storedParNum1,
-              playing: true,
-              time: this.speaking[storedParNum1].time,
-              pan: playMode===A_PLUS_ONE ? 1 : -1
-            },
-            { ...this.state.players[1],
-              paragraph: storedParNum2,
-              playing: true,
-              time: this.goon[storedParNum2].time,
-              pan: playMode===A_PLUS_ONE ? -1 : 1
-            }
-        ]}
-
-        console.log('recoveredState ', this.recoveredState)
-
-        // this.setState({...this.state,
-        //   storageLoaded: true,
-        //   screenMode: SCREEN_CONTINUE,
-        //   playMode: playMode,
-        //   players: [
-        //    { ...this.state.players[0], paragraph: storedParNum},
-        //    { ...this.state.players[1]}
-        // ]})
-
-      }
-      else {
-        this.setState({...this.state, storageLoaded: true});
-        AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  0}))
-      }
+       value = await AsyncStorage.getItem(STORAGE_KEY);
     } catch (error) {
       console.log('AsyncStorage error: ', error.message);
+      return;
+    }
+
+    if (value !== null) {
+      const storedParNum1 = JSON.parse(value).player1Paragraph
+      const storedParNum2 = JSON.parse(value).player2Paragraph
+      const playMode = JSON.parse(value).playMode
+      console.log('Recovered selection from disk: ', storedParNum1, storedParNum2);
+
+      this.setState({...this.state, storageLoaded: true, screenMode: SCREEN_CONTINUE})
+
+      this.recoveredState = {...this.state,
+        storageLoaded: true,
+        screenMode: SCREEN_PLAY_PAUSE_BTNS,
+        playMode: playMode,
+        playing: true,
+        players: [
+          { ...this.state.players[0],
+            paragraph: storedParNum1,
+            playing: true,
+            //time: this.speaking[storedParNum1].time, //TODO fix time
+            pan: playMode===A_PLUS_ONE ? 1 : -1
+          },
+          { ...this.state.players[1],
+            paragraph: storedParNum2,
+            playing: true,
+            //time: this.goon[storedParNum2].time, //TODO fix time
+            pan: playMode===A_PLUS_ONE ? -1 : 1
+          }
+      ]}
+
+      console.log('recoveredState ', this.recoveredState)
+
+      // this.setState({...this.state,
+      //   storageLoaded: true,
+      //   screenMode: SCREEN_CONTINUE,
+      //   playMode: playMode,
+      //   players: [
+      //    { ...this.state.players[0], paragraph: storedParNum},
+      //    { ...this.state.players[1]}
+      // ]})
+
+    }
+    else {
+      this.setState({...this.state, storageLoaded: true});
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  0}))
     }
   }
 /*
@@ -225,50 +231,114 @@ class MainView extends Component {
       //console.log(`player ${i} mode was ${player.playing} now ${nextPlayers[i].playing}`)
       if(player.playing ===! nextPlayers[i].playing || playing!==nextPlaying) {
         console.log(`player ${i} mode changed to ${nextPlayers[i].playing}`)
-        const sound = this.sounds[i]
-        sound.getCurrentTime((seconds) => {
+        //sound.getCurrentTime((seconds) => {
           const textSegments = i===0 ? this.speaking : this.goon
           const paraTime = textSegments[nextPlayers[i].paragraph].time
-          console.log('setting time? player ', i, ' paragraph ',  player.paragraph, ' seconds ', seconds, 'paraTime', paraTime)
-          if(seconds < paraTime) {
+          console.log('setting time? player ', i, ' paragraph ',  player.paragraph,  'paraTime', paraTime)
+          //if(seconds < paraTime) {
             //player.time = paraTime  // needs setstate not allowed here. needed? should be set in setinterval
-          }
-          if(seconds<1) {  //TODO: this.speaking needed?  //TODO set anyways because when paused state.playing is false
-            sound.setCurrentTime(paraTime) //needed for the first time
-          }
-          console.log('setting pan ', i, nextPlayers[i].pan)
+          //}
+          if(this.soundParagraphs[i]!==nextPlayers[i].paragraph) {  //TODO: this.speaking needed?  //TODO set anyways because when paused state.playing is false
+            //sound.setCurrentTime(paraTime) //needed for the first time
 
-          sound.setPan(nextPlayers[i].pan)
+            this.soundParagraphs[i] = nextPlayers[i].paragraph
 
-          if(nextPlaying && nextPlayers[i].playing) {
-            console.log('playing ', i)
-            if(playing===false) { //was paused
+            const filePrefix = i===0 ? 'speaking_' : 'goon_'
 
-              this.scheduleNextTrack(i, seconds)
+            console.log('releasing prev sound')
+            //if(this.sounds[i])  {
+              //this.sounds[i].release()
+            //}
+
+            this.sounds[i] = new Sound(filePrefix + this.soundParagraphs[i] , Sound.MAIN_BUNDLE, (e) => {
+              if (e) {
+                console.log('error!!', e)
+              } else {
+
+                const sound = this.sounds[i]
+
+
+                console.log('sound ready', this.sounds[i].getDuration())
+
+              if(nextPlaying && nextPlayers[i].playing) {
+
+                console.log('setting pan ', i, nextPlayers[i].pan)
+
+                sound.setPan(nextPlayers[i].pan)
+
+                console.log('playing ', i)
+
+                sound.play((success) => {
+                  if(success) {
+                    console.log('finished playing', i)
+
+                    this.sounds[i].release()
+                  }
+                  else {
+
+                    console.log('ERROR or end playing ', i)
+                  }
+                })
+              }
+              else {
+                console.log('pause ', i)
+                sound.pause()
+
+              }
 
             }
 
-            sound.play((e) => {
-              console.log('ERROR playing ', i, e)
+
+
+          });
+
+
+        }
+        else {
+
+          const sound = this.sounds[i]
+
+          console.log('already loaded, playing... ', i)
+
+
+          if(nextPlaying && nextPlayers[i].playing) {
+
+            console.log('setting pan ', i, nextPlayers[i].pan)
+
+            sound.setPan(nextPlayers[i].pan)
+
+            console.log('playing ', i)
+
+            sound.play((success) => {
+              if(success) {
+                console.log('finished playing', i)
+              }
+              else {
+
+                console.log('ERROR or end playing ', i)
+              }
             })
           }
           else {
             console.log('pause ', i)
             sound.pause()
 
-            TimerMixin.clearTimeout(this.timer[i])
-
-
-            //TODO reschedule interval!
           }
 
-        })
+        }
+
+
+        //})
       }
     })
 
 
 
 
+
+  }
+
+  playSound(sound, player) {
 
   }
 
@@ -513,8 +583,8 @@ class MainView extends Component {
     */
     console.log('recoveredState', this.recoveredState)
     this.setState(this.recoveredState, () => {
-      this.scheduleNextTrack(0)
-      this.scheduleNextTrack(1)
+      //this.scheduleNextTrack(0)
+      //this.scheduleNextTrack(1)
     })
 
 
@@ -548,13 +618,13 @@ class MainView extends Component {
 
       console.log(i, 'nextSectionStart', nextSectionStart, 'duration', duration)
 
-      this.timer[i] = TimerMixin.setTimeout(() => {
+      // this.timer[i] = TimerMixin.setTimeout(() => {
 
-        this.timeIsUp(i)
+      //   this.timeIsUp(i)
 
 
 
-      }, duration * 1000)
+      // }, duration * 1000)
     }
 
   }
@@ -640,7 +710,7 @@ class MainView extends Component {
 
     }
 
-    this.scheduleNextTrack(i)
+    //this.scheduleNextTrack(i)
   }
 
   playSound(mode) {
@@ -670,7 +740,7 @@ class MainView extends Component {
             }
           ]
         }, () => {
-            this.scheduleNextTrack(0)
+            //this.scheduleNextTrack(0)
           }
         )
         break;
@@ -698,8 +768,8 @@ class MainView extends Component {
             }
           ]
         }, () => {
-            this.scheduleNextTrack(0)
-            this.scheduleNextTrack(1)
+            //this.scheduleNextTrack(0)
+            //this.scheduleNextTrack(1)
           }
         )
         break;
@@ -727,8 +797,8 @@ class MainView extends Component {
             }
           ]
         }, () => {
-            this.scheduleNextTrack(0)
-            this.scheduleNextTrack(1)
+            //this.scheduleNextTrack(0)
+            //this.scheduleNextTrack(1)
           }
         )
         break;
@@ -755,8 +825,8 @@ class MainView extends Component {
   }
 
   cleanup() {
-    TimerMixin.clearTimeout(this.timer[0])
-    TimerMixin.clearTimeout(this.timer[1])
+    //TimerMixin.clearTimeout(this.timer[0])
+    //TimerMixin.clearTimeout(this.timer[1])
 
     console.log('cleaning up')
     this.sounds[0].stop()
