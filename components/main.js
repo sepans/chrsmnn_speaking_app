@@ -9,8 +9,6 @@ import {
   AppState
 } from 'react-native'
 
-//import TimerMixin from 'react-timer-mixin';
-//const reactMixin = require('react-mixin');
 
 import Button from 'react-native-button'
 import Sound from 'react-native-sound'
@@ -19,8 +17,6 @@ import Drawer from 'react-native-drawer'
 import SpeakingData from './../speaking.json'
 
 import GoonData from './../goon.json'
-
-//var SpeakingData = require('./../speaking.json')
 
 const GOON = 'GOON', SPEAKING = 'SPEAKING', SPEAKING_PLUS_GOON = 'SPEAKING_PLUS_GOON', GOON_PLUS_SPEAKING = 'GOON_PLUS_SPEAKING'
 
@@ -225,14 +221,7 @@ class MainView extends Component {
 
         }
 
-
-        //})
-      //}
     })
-
-
-
-
 
   }
 
@@ -256,7 +245,9 @@ class MainView extends Component {
         }
         else {
 
-          console.log('ERROR or end playing ', i)
+          console.log('ERROR!!!!  playing ', i)
+          //schedule new track
+          this.timeIsUp(i)
         }
       })
     }
@@ -340,37 +331,6 @@ class MainView extends Component {
     }
     console.log('player 0 paragraph', players[0].paragraph, 'player 0 paragraph', players[1].paragraph)
 
-    /*
-    const textSegments = playMode===GOON_PLUS_SPEAKING || playMode===GOON ? this.goon : this.speaking
-    const mainPlayerIndex = playMode===GOON_PLUS_SPEAKING || playMode===GOON ? 1: 0
-
-
-    console.log('mainplayer paragraph', playMode, mainPlayerIndex, players[mainPlayerIndex].paragraph)
-
-    const paragraphsUptoNow = textSegments ? textSegments.map((cur, i) => {
-
-      const textEl = (i <= players[mainPlayerIndex].paragraph) ?
-        <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'left', color: '#333'}}>{cur.text}</Text> :
-        <Text ref={`para-${i}`} style={{height: 0}}></Text>
-
-      return <View key={`para-${i}`}>{textEl}</View>
-
-    }) : ''
-
-
-    const otherTextSegments = playMode===GOON_PLUS_SPEAKING ? this.speaking : this.goon
-    const otherPlayer = playMode===GOON_PLUS_SPEAKING ? 0 : 1
-
-    const currentRandomParagraph = otherTextSegments[this.state.players[otherPlayer].paragraph].text
-
-    //console.log('currentRandomParagraph', currentRandomParagraph)
-    //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments[this.state.players[otherPlayer].paragraph])
-
-    const rightParagraph = playMode!==GOON && playMode!==SPEAKING  ?
-      <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{currentRandomParagraph}</Text> :
-      <Text></Text>
-
-    */
 
     const paragraphsUptoNow = playedParagraphs.map((par, i) => {
       //{text: SPEAKING, num: newPragraphNum, channel: CHANNEL_RIGHT}
@@ -736,14 +696,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000'
   },
-  /*
-  btnsrow: {
-    flexDirection:'row',
-    flex: 1,
-    justifyContent: 'flex-end'
-
-  },
-  */
   centered: {
     justifyContent: 'center',
     alignItems: 'center',
@@ -756,6 +708,5 @@ const styles = StyleSheet.create({
   },
 })
 
-//reactMixin(MainView.prototype, TimerMixin);
 
 export default MainView
