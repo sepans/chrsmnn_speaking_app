@@ -30,6 +30,8 @@ const SCREEN_CONTINUE = 'screen continue'
 const SCREEN_A_BTNS = 'screen A btns'
 const SCREEN_PLAY_PAUSE_BTNS = 'screen play pause btns'
 
+const CHANNEL_BOTH = 'CHANNEL_BOTH', CHANNEL_LEFT = 'CHANNEL_LEFT', CHANNEL_RIGHT = 'CHANNEL_RIGHT'
+
 const STORAGE_KEY = 'chrsmnn_last_speaking_para';
 
   const initialState ={
@@ -56,50 +58,23 @@ const STORAGE_KEY = 'chrsmnn_last_speaking_para';
 
       }
 
-    ]
+    ],
+    playedParagraphs: []
   }
 
 
 class MainView extends Component {
 
 
-
-
   constructor(props) {
     super(props)
 
-    //this.scrolled = false;
 
     this.state = initialState;
-    //const speakingAudio = 'speaking_0.mp3'
-    //const goonAudio = 'goon_0.mp3'
-    //console.log('file', file)
 
     this.sounds = []
     this.soundParagraphs = [-1, -1]
     this.timer = []
-
-    /*
-    this.sounds[0] = new Sound('speaking_' + this.soundParagraphs[0] , Sound.MAIN_BUNDLE, (e) => {
-      if (e) {
-        console.log('error!!', e)
-      } else {
-
-        console.log('sound ready', this.sounds[0].getDuration())
-      }
-    });
-
-    this.sounds[1] = new Sound('goon_' + this.soundParagraphs[0], Sound.MAIN_BUNDLE, (e) => {
-      if (e) {
-        console.log('error!!', e)
-      } else {
-
-        console.log('sound ready', this.sounds[1].getDuration())
-      }
-    });
-    */
-
-
 
   }
 
@@ -117,7 +92,8 @@ class MainView extends Component {
       const storedParNum1 = JSON.parse(value).player1Paragraph
       const storedParNum2 = JSON.parse(value).player2Paragraph
       const playMode = JSON.parse(value).playMode
-      console.log('Recovered selection from disk: ', storedParNum1, storedParNum2);
+      const playedParagraphs = JSON.parse(value).playedParagraphs || []
+      console.log('Recovered selection from disk: ', JSON.parse(value), storedParNum1, storedParNum2);
 
       this.setState({...this.state, storageLoaded: true, screenMode: SCREEN_CONTINUE})
 
@@ -139,46 +115,18 @@ class MainView extends Component {
             time: this.goon[storedParNum2] ? this.goon[storedParNum2].time : 0, //TODO fix time
             pan: playMode===SPEAKING_PLUS_GOON ? -1 : 1
           }
-      ]}
+        ],
+        playedParagraphs: playedParagraphs
+      }
 
       console.log('recoveredState ', this.recoveredState)
 
-      // this.setState({...this.state,
-      //   storageLoaded: true,
-      //   screenMode: SCREEN_CONTINUE,
-      //   playMode: playMode,
-      //   players: [
-      //    { ...this.state.players[0], paragraph: storedParNum},
-      //    { ...this.state.players[1]}
-      // ]})
 
     }
     else {
       this.setState({...this.state, storageLoaded: true});
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  0}))
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  0, playedParagraphs: []}))
     }
-  }
-/*
-  _setPlayerTimes() {
-    const times = [this.speaking[1].time, this.speaking[2].time]
-    console.log('TIMES ', times)
-    this.setState({...this.state, players: [
-       { ...this.state.players[0], time: times[0]},
-       {...this.state.players[1], time: times[1]},
-
-      ]})
-  }
-  */
-
-  shouldComponentUpdate(nextProps, nextState) {
-    //console.log('should update? ', nextState)
-    // if(!nextState.storageLoaded || !nextState.speakingLoaded) {
-    //   console.log('NO')
-    //   return false
-    // }
-
-    return true;
-
   }
 
   componentDidMount() {
@@ -207,13 +155,6 @@ class MainView extends Component {
 
     this.setState({...this.state, speakingLoaded: true});
 
-    //this._setPlayerTimes()
-
-    //console.log('SETTTING INTERVAL', TimerMixin.setTimeout)
-
-   // this.timer = TimerMixin.setTimeout(() => {
-   //    console.log('TIMER!!!! I do not leak!');
-   //  }, 5000);
 
 
   }
@@ -335,18 +276,18 @@ class MainView extends Component {
       return <View><Text>Loading</Text></View>
     }
 
-    const { players, playing, screenMode, playMode} = this.state
+    const { players, playing, screenMode, playMode, playedParagraphs} = this.state
 
 
     const modeBtns = (
       <View style={{alignItems: 'center'}}>
-        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[0])}>speaking is difficult</Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handleModePlayPressed(PLAY_MODES[0])}>speaking is difficult</Button>
         <Text style={styles.normaltext, styles.or}>or</Text>
-        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[1])}>go on, make me</Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handleModePlayPressed(PLAY_MODES[1])}>go on, make me</Button>
         <Text style={styles.normaltext, styles.or}>or</Text>
-        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[2])}>speaking is difficult / go on, make me</Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handleModePlayPressed(PLAY_MODES[2])}>speaking is difficult / go on, make me</Button>
         <Text style={styles.normaltext, styles.or}>or</Text>
-        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[3])}>go on, make me / speaking is difficult</Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handleModePlayPressed(PLAY_MODES[3])}>go on, make me / speaking is difficult</Button>
       </View>
     )
 
@@ -399,6 +340,7 @@ class MainView extends Component {
     }
     console.log('player 0 paragraph', players[0].paragraph, 'player 0 paragraph', players[1].paragraph)
 
+    /*
     const textSegments = playMode===GOON_PLUS_SPEAKING || playMode===GOON ? this.goon : this.speaking
     const mainPlayerIndex = playMode===GOON_PLUS_SPEAKING || playMode===GOON ? 1: 0
 
@@ -428,10 +370,22 @@ class MainView extends Component {
       <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{currentRandomParagraph}</Text> :
       <Text></Text>
 
+    */
+
+    const paragraphsUptoNow = playedParagraphs.map((par, i) => {
+      //{text: SPEAKING, num: newPragraphNum, channel: CHANNEL_RIGHT}
+      const textSegments = par.text===GOON ? this.goon : this.speaking
+      const paragraphText = textSegments[par.num].text
+      const textAlign = par.channel===CHANNEL_RIGHT ? 'right' : 'left'
+      console.log(par, textAlign)
+      return <Text key={`para-${par.text}-${par.num}`} ref={`para-${par.text}-${par.num}`} style={{padding: 20, textAlign: textAlign, color: '#333'}}>{paragraphText}</Text>
+    })
+
+
 
     const text = (
       <ScrollView ref="textscroll" onContentSizeChange={(contentWidth, contentHeight)=>{ this.scrollContentSizeChanged(contentWidth, contentHeight)}}>
-        <View>{this.speaking ? paragraphsUptoNow : null}</View><View>{rightParagraph}</View>
+        <View>{paragraphsUptoNow}</View>
       </ScrollView>
     )
 
@@ -479,38 +433,12 @@ class MainView extends Component {
 
   }
 
-  componentDidUpdate(prevPrps, prevState) {
-    /*
-    console.log('COMPGOONNT DID UPDATE')
-    const { players } = this.state
-    const  prevPlayers  = prevState.players
-
-    if(this.scrolled && players[0].paragraph === prevPlayers[0].paragraph && players[1].paragraph === prevPlayers[1].paragraph) {
-      return;
-    }
-    console.log('SCROLLING')
-
-    this.scrolled = true;
-
-    if(this.speaking) {
-       const lastParagraph = this.refs[`para-${players[0].paragraph}`]
-       console.log(this.refs, `para-${players[0].paragraph}`,  lastParagraph)
-      if(lastParagraph)
-      lastParagraph.measure( (fx, fy, width, height, px, py) => {
-        console.log(py)
-        this.refs.textscroll.scrollTo({y: py, animated:true})
-      })
-    }
-    */
-
-  }
-
   showText() {
     console.log('SHOW TEXT')
     this.refs.textdrawer.open()
   }
 
-  _handlePress(mode) {
+  _handleModePlayPressed(mode) {
         console.log('Pressed!!!!', mode)
         this.playSound(mode)
   }
@@ -522,18 +450,9 @@ class MainView extends Component {
 
 
   continuePlaying() {
-   /*
-   this.setState({...this.state,
-      screenMode: SCREEN_PLAY_PAUSE_BTNS,
-      players: [
-       { ...this.state.players[0], playing: true},
-       { ...this.state.players[1]}
-    ]})
-    */
+
     console.log('recoveredState', this.recoveredState)
     this.setState(this.recoveredState, () => {
-      //this.scheduleNextTrack(0)
-      //this.scheduleNextTrack(1)
     })
 
 
@@ -548,39 +467,11 @@ class MainView extends Component {
   }
 
 
-  scheduleNextTrack(i, pausedSeconds) {
 
-    const {players, playMode, playing} = this.state
-
-    player = players[i]
-
-    console.log('schedule player', player)
-
-    if(player.playing && playing) {
-      const textSegments = i===0 ? this.speaking : this.goon
-      //TODO if player.paragraph + 1 > thisSegments.length
-      const nextSectionStart = (player.paragraph + 1 === textSegments.length) ?
-         this.sounds[i].getDuration() :
-         textSegments[player.paragraph + 1].time
-
-      const duration = nextSectionStart - (pausedSeconds ? pausedSeconds : player.time)
-
-      console.log(i, 'nextSectionStart', nextSectionStart, 'duration', duration)
-
-      // this.timer[i] = TimerMixin.setTimeout(() => {
-
-      //   this.timeIsUp(i)
-
-
-
-      // }, duration * 1000)
-    }
-
-  }
 
   timeIsUp(i) {
 
-    const { playMode } = this.state
+    const { playMode, playedParagraphs } = this.state
 
     const textSegments = i===0 ? this.speaking : this.goon
 
@@ -597,15 +488,21 @@ class MainView extends Component {
 
       console.log('randomizing ', i, ' to ', newPragraphNum)
 
+      playedParagraphs.push({text: SPEAKING, num: newPragraphNum, channel: CHANNEL_RIGHT})
+
       this.setState({...this.state, players: [
                { ...this.state.players[0], paragraph: newPragraphNum, time: newTime}, //
                { ...this.state.players[1]}
-      ]})
+        ],
+        playedParagraphs: playedParagraphs
+      })
 
-      //this.sounds[i].setCurrentTime(newTime)
 
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
-             player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph}))
+             player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph,
+             playedParagraphs: playedParagraphs
+           }))
+
 
 
     }
@@ -616,15 +513,22 @@ class MainView extends Component {
 
       console.log('randomizing ', i, ' to ', newPragraphNum)
 
+      playedParagraphs.push({text: GOON, num: newPragraphNum, channel: CHANNEL_RIGHT})
+
       this.setState({...this.state, players: [
                { ...this.state.players[0]}, //
                { ...this.state.players[1], paragraph: newPragraphNum, time: newTime}
-      ]})
+        ],
+        playedParagraphs: playedParagraphs
+      })
 
       //this.sounds[i].setCurrentTime(newTime)
 
+
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
-             player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum}))
+             player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum,
+             playedParagraphs: playedParagraphs
+           }))
 
 
     }
@@ -635,12 +539,20 @@ class MainView extends Component {
 
       console.log('continue ', i, ' with ', newPragraphNum)
 
+      playedParagraphs.push({text: SPEAKING, num: newPragraphNum, channel: CHANNEL_LEFT}) // or both, does it matter?
+
       this.setState({...this.state, players: [
                { ...this.state.players[0], paragraph: newPragraphNum, time: newTime}, //
                { ...this.state.players[1]}
-      ]})
+        ],
+        playedParagraphs: playedParagraphs
+      })
+
+
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
-             player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph}))
+             player1Paragraph: newPragraphNum, player2Paragraph: this.state.players[1].paragraph,
+             playedParagraphs: playedParagraphs
+           }))
 
     }
     else if (i===1) {
@@ -650,21 +562,27 @@ class MainView extends Component {
 
       console.log('continue ', i, ' with ', newPragraphNum)
 
+      playedParagraphs.push({text: GOON, num: newPragraphNum, channel: CHANNEL_LEFT}) // or both, does it matter?
+
       this.setState({...this.state, players: [
                { ...this.state.players[0]}, //
                { ...this.state.players[1], paragraph: newPragraphNum, time: newTime}
-      ]})
+        ],
+        playedParagraphs: playedParagraphs
+      })
+
       AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
-             player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum}))
+             player1Paragraph: this.state.players[0].paragraph, player2Paragraph: newPragraphNum,
+             playedParagraphs: playedParagraphs
+           }))
 
     }
 
-    //this.scheduleNextTrack(i)
   }
 
   playSound(mode) {
 
-    const {players} = this.state
+    const { players } = this.state
     let rand
 
     switch(mode) {
@@ -687,11 +605,10 @@ class MainView extends Component {
               paragraph: this.state.players[1].paragraph
 
             }
-          ]
-        }, () => {
-            //this.scheduleNextTrack(0)
-          }
-        )
+          ],
+          playedParagraphs: [{text: SPEAKING, num: 0, channel: CHANNEL_BOTH}]
+        })
+
         break;
       case GOON:
         this.setState({
@@ -712,11 +629,9 @@ class MainView extends Component {
               paragraph: this.state.players[1].paragraph
 
             }
-          ]
-        }, () => {
-            //this.scheduleNextTrack(0)
-          }
-        )
+          ],
+          playedParagraphs: [{text: GOON, num: 0, channel: CHANNEL_BOTH}]
+        })
         break;
       case SPEAKING_PLUS_GOON:
         //if A+1, then A plays straight through on left channel and the paras of 1 are randomised and played on right.
@@ -729,8 +644,8 @@ class MainView extends Component {
             {
               playing: true,
               pan: 1,
-              time: this.speaking[this.state.players[0].paragraph].time,
-              paragraph: this.state.players[0].paragraph
+              time: 0,
+              paragraph: 0
 
             },
             {
@@ -740,12 +655,10 @@ class MainView extends Component {
               paragraph: rand
 
             }
-          ]
-        }, () => {
-            //this.scheduleNextTrack(0)
-            //this.scheduleNextTrack(1)
-          }
-        )
+          ],
+          playedParagraphs: [{text: SPEAKING, num: 0, channel: CHANNEL_LEFT},
+                             {text: GOON, num: rand, channel: CHANNEL_RIGHT}]
+        })
         break;
       case GOON_PLUS_SPEAKING:
         //if 1+A, then 1 plays L and A is randomised on R
@@ -769,25 +682,17 @@ class MainView extends Component {
               paragraph: this.state.players[1].paragraph
 
             }
-          ]
-        }, () => {
-            //this.scheduleNextTrack(0)
-            //this.scheduleNextTrack(1)
-          }
-        )
+          ],
+          playedParagraphs: [{text: GOON, num: 0, channel: CHANNEL_LEFT},
+                             {text: SPEAKING, num: rand, channel: CHANNEL_RIGHT}]
+        })
         break;
     }
-
-    //this.scheduleNextTrack(0)
-    //this.scheduleNextTrack(1)
-
-
 
   }
 
   componentWillUnmount() {
 
-    //TimerMixin.clearTimeout(this.timer);
     this.cleanup()
   }
 
@@ -799,8 +704,6 @@ class MainView extends Component {
   }
 
   cleanup() {
-    //TimerMixin.clearTimeout(this.timer[0])
-    //TimerMixin.clearTimeout(this.timer[1])
 
     console.log('cleaning up')
     this.sounds[0].stop()
