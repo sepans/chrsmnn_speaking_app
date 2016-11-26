@@ -22,9 +22,9 @@ import GoonData from './../goon.json'
 
 //var SpeakingData = require('./../speaking.json')
 
-const ONE_OR_A = 'ONE_OR_A', A_PLUS_ONE = 'A_PLUS_ONE', ONE_PLUS_A = 'ONE_PLUS_A'
+const GOON = 'GOON', SPEAKING = 'SPEAKING', SPEAKING_PLUS_GOON = 'SPEAKING_PLUS_GOON', GOON_PLUS_SPEAKING = 'GOON_PLUS_SPEAKING'
 
-const PLAY_MODES = [ ONE_OR_A, A_PLUS_ONE, ONE_PLUS_A]
+const PLAY_MODES = [ SPEAKING, GOON, SPEAKING_PLUS_GOON, GOON_PLUS_SPEAKING]
 
 const SCREEN_CONTINUE = 'screen continue'
 const SCREEN_A_BTNS = 'screen A btns'
@@ -39,7 +39,7 @@ const STORAGE_KEY = 'chrsmnn_last_speaking_para';
     screenMode: SCREEN_A_BTNS,
     displayText: false,
     textPaneOpen: false,
-    playMode: ONE_OR_A,
+    playMode: GOON,
     players: [
       {
         paragraph: 0,
@@ -130,14 +130,14 @@ class MainView extends Component {
           { ...this.state.players[0],
             paragraph: storedParNum1,
             playing: true,
-            time: this.speaking[storedParNum1].time, //TODO fix time
-            pan: playMode===A_PLUS_ONE ? 1 : -1
+            time: this.speaking[storedParNum1] ? this.speaking[storedParNum1].time : 0, //TODO fix time
+            pan: playMode===SPEAKING_PLUS_GOON ? 1 : -1
           },
           { ...this.state.players[1],
             paragraph: storedParNum2,
             playing: true,
-            time: this.goon[storedParNum2].time, //TODO fix time
-            pan: playMode===A_PLUS_ONE ? -1 : 1
+            time: this.goon[storedParNum2] ? this.goon[storedParNum2].time : 0, //TODO fix time
+            pan: playMode===SPEAKING_PLUS_GOON ? -1 : 1
           }
       ]}
 
@@ -338,32 +338,15 @@ class MainView extends Component {
     const { players, playing, screenMode, playMode} = this.state
 
 
-
-
-    /*
-    const modeBtns = PLAY_MODES.map(d => {
-      return (
-          <Button style={{color: '#000' ,marginBottom: 30}} key={d}
-            onPress={(e) => this._handlePress(d)}>
-            {d}
-          </Button>
-        )
-    })
-    */
-
     const modeBtns = (
       <View style={{alignItems: 'center'}}>
-        <Button onPress={(e) => this._handlePress(PLAY_MODES[0])}>
-          <View style={{alignItems: 'center'}}>
-            <Text style={styles.normaltext}>speaking is difficult</Text>
-            <Text style={styles.normaltext}>or</Text>
-            <Text style={styles.normaltext}>go on, make me</Text>
-          </View>
-        </Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[0])}>speaking is difficult</Button>
         <Text style={styles.normaltext, styles.or}>or</Text>
-        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[1])}>speaking is difficult / go on, make me</Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[1])}>go on, make me</Button>
         <Text style={styles.normaltext, styles.or}>or</Text>
-        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[2])}>go on, make me / speaking is difficult</Button>
+        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[2])}>speaking is difficult / go on, make me</Button>
+        <Text style={styles.normaltext, styles.or}>or</Text>
+        <Button  style={styles.normaltext} onPress={(e) => this._handlePress(PLAY_MODES[3])}>go on, make me / speaking is difficult</Button>
       </View>
     )
 
@@ -416,8 +399,8 @@ class MainView extends Component {
     }
     console.log('player 0 paragraph', players[0].paragraph, 'player 0 paragraph', players[1].paragraph)
 
-    const textSegments = playMode===ONE_PLUS_A ? this.goon : this.speaking
-    const mainPlayerIndex = playMode===ONE_PLUS_A ? 1: 0
+    const textSegments = playMode===GOON_PLUS_SPEAKING || playMode===GOON ? this.goon : this.speaking
+    const mainPlayerIndex = playMode===GOON_PLUS_SPEAKING || playMode===GOON ? 1: 0
 
 
     console.log('mainplayer paragraph', playMode, mainPlayerIndex, players[mainPlayerIndex].paragraph)
@@ -428,25 +411,20 @@ class MainView extends Component {
         <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'left', color: '#333'}}>{cur.text}</Text> :
         <Text ref={`para-${i}`} style={{height: 0}}></Text>
 
-
-      // const textEl = (i <= players[0].paragraph) ?
-      //   <Text ref={`para-${i}`} style={{padding: 20, textAlign: 'right', color: '#333'}}>{cur.text}</Text> :
-      //   <Text ref={`para-${i}`} style={{height: 0}}></Text>
-
       return <View key={`para-${i}`}>{textEl}</View>
 
     }) : ''
 
 
-    const otherTextSegments = playMode===ONE_PLUS_A ? this.speaking : this.goon
-    const otherPlayer = playMode===ONE_PLUS_A ? 0 : 1
+    const otherTextSegments = playMode===GOON_PLUS_SPEAKING ? this.speaking : this.goon
+    const otherPlayer = playMode===GOON_PLUS_SPEAKING ? 0 : 1
 
     const currentRandomParagraph = otherTextSegments[this.state.players[otherPlayer].paragraph].text
 
     //console.log('currentRandomParagraph', currentRandomParagraph)
     //console.log(otherPlayer, this.state.players[otherPlayer], otherTextSegments[this.state.players[otherPlayer].paragraph])
 
-    const rightParagraph = playMode!==ONE_OR_A ?
+    const rightParagraph = playMode!==GOON && playMode!==SPEAKING  ?
       <Text ref='para-n' key='para-n' style={{padding: 20, textAlign: 'right', color: '#333'}}>{currentRandomParagraph}</Text> :
       <Text></Text>
 
@@ -456,19 +434,6 @@ class MainView extends Component {
         <View>{this.speaking ? paragraphsUptoNow : null}</View><View>{rightParagraph}</View>
       </ScrollView>
     )
-    //console.log(text)
-    /*
-    if(this.speaking) {
-       const lastParagraph = this.refs[`para-${players[0].paragraph}`]
-       console.log(this.refs, `para-${players[0].paragraph}`,  lastParagraph)
-      if(lastParagraph)
-      lastParagraph.measure( (fx, fy, width, height, px, py) => {
-        console.log(py)
-        this.refs.textscroll.scrollTo({y: py, animated:true})
-      })
-    }
-    */
-
 
     return (
       <Drawer
@@ -516,7 +481,7 @@ class MainView extends Component {
 
   componentDidUpdate(prevPrps, prevState) {
     /*
-    console.log('COMPONENT DID UPDATE')
+    console.log('COMPGOONNT DID UPDATE')
     const { players } = this.state
     const  prevPlayers  = prevState.players
 
@@ -624,7 +589,7 @@ class MainView extends Component {
       return
     }
 
-    if (i===0 && playMode===ONE_PLUS_A) {
+    if (i===0 && playMode===GOON_PLUS_SPEAKING) {
 
 
       const newPragraphNum = Math.floor(Math.random() * textSegments.length)
@@ -644,7 +609,7 @@ class MainView extends Component {
 
 
     }
-    else if (i===1 && playMode===A_PLUS_ONE) {
+    else if (i===1 && playMode===SPEAKING_PLUS_GOON) {
 
       const newPragraphNum = Math.floor(Math.random() * textSegments.length)
       const newTime = textSegments[newPragraphNum].time
@@ -703,7 +668,7 @@ class MainView extends Component {
     let rand
 
     switch(mode) {
-      case ONE_OR_A:
+      case SPEAKING:
         this.setState({
           ...this.state,
           screenMode: SCREEN_PLAY_PAUSE_BTNS,
@@ -728,7 +693,32 @@ class MainView extends Component {
           }
         )
         break;
-      case A_PLUS_ONE:
+      case GOON:
+        this.setState({
+          ...this.state,
+          screenMode: SCREEN_PLAY_PAUSE_BTNS,
+          playMode: mode,
+          players: [
+            {
+              playing: false,
+              pan: 0,
+              time: 0,
+              paragraph: this.state.players[0].paragraph
+            },
+            {
+              playing: true,
+              pan: 0,
+              time: this.goon[this.state.players[0].paragraph].time,
+              paragraph: this.state.players[1].paragraph
+
+            }
+          ]
+        }, () => {
+            //this.scheduleNextTrack(0)
+          }
+        )
+        break;
+      case SPEAKING_PLUS_GOON:
         //if A+1, then A plays straight through on left channel and the paras of 1 are randomised and played on right.
         rand = Math.floor(Math.random() * this.goon.length)
         this.setState({
@@ -757,7 +747,7 @@ class MainView extends Component {
           }
         )
         break;
-      case ONE_PLUS_A:
+      case GOON_PLUS_SPEAKING:
         //if 1+A, then 1 plays L and A is randomised on R
         rand = Math.floor(Math.random() * this.speaking.length)
         this.setState({
