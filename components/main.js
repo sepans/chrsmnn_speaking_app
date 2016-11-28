@@ -121,7 +121,8 @@ class MainView extends Component {
     }
     else {
       this.setState({...this.state, storageLoaded: true});
-      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode, player1Paragraph:  0, playedParagraphs: []}))
+      AsyncStorage.setItem(STORAGE_KEY, JSON.stringify({playMode: this.state.playMode,
+         player1Paragraph:  0, player2Paragraph:  0, playedParagraphs: []}))
     }
   }
 
@@ -407,20 +408,13 @@ class MainView extends Component {
     this.setState({...this.state, playing: !this.state.playing})
   }
 
-
-
   continuePlaying() {
 
     console.log('recoveredState', this.recoveredState)
-    this.setState(this.recoveredState, () => {
-    })
-
-
-    //this.playSound(this.state.playMode)
+    this.setState(this.recoveredState)
   }
 
   startOverPlaying() {
-    //this.setState({...this.state, screenMode: SCREEN_A_BTNS, players})
 
     this.setState({...this.state, screenMode: SCREEN_A_BTNS})
 
